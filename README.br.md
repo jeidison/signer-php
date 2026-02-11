@@ -39,7 +39,7 @@ Se você precisa assinar PDFs no backend com validade criptográfica, esta bibli
 - `ext-curl`
 - recomendado: `ext-zlib` e `ext-fileinfo`
 
-## Instalação e autoload
+## Instalação
 
 Instale via Composer:
 

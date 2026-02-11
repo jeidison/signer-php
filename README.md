@@ -39,19 +39,13 @@ If you need backend PDF signing with cryptographic validity, this library provid
 - `ext-curl`
 - recommended: `ext-zlib` and `ext-fileinfo`
 
-## Installation and autoload
+## Installation
 
 Install with Composer:
 
 ```bash
 composer require jeidison/signer-php
 ```
-
-In this repository, autoload is already configured in the root `composer.json`.
-
-Namespace:
-
-- `PdfSigner\\...`
 
 ## Usage
 
@@ -93,12 +87,12 @@ use PdfSigner\Application\DTO\SignatureMetadataDto;
 use PdfSigner\Presentation\PdfSigner;
 
 $metadata = new SignatureMetadataDto(
- reason: 'Contract approval',
- location: 'Sao Paulo - BR',
- actor: new SignatureActorDto(
- name: 'Maria Silva',
- contactInfo: 'maria@company.com'
- )
+   reason: 'Contract approval',
+   location: 'Sao Paulo - BR',
+   actor: new SignatureActorDto(
+     name: 'Maria Silva',
+     contactInfo: 'maria@company.com'
+   )
 );
 
 $signedPdf = PdfSigner::signer()
@@ -220,12 +214,12 @@ $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withDefaultTimestampProfile(new TimestampOptionsDto(
- tsaUrl: 'https://timestamp.your-provider.com',
- hashAlgorithm: 'sha256',
- certReq: true,
- username: null,
- password: null,
- timeoutSeconds: 15
+     tsaUrl: 'https://timestamp.your-provider.com',
+     hashAlgorithm: 'sha256',
+     certReq: true,
+     username: null,
+     password: null,
+     timeoutSeconds: 15
  ))
  ->sign();
 ```
@@ -344,10 +338,10 @@ $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withBrazilPolicy(new BrazilSignaturePolicyOptionsDto(
- tsaUrl: 'https://tsa.your-icpbrasil-provider.com',
- hashAlgorithm: 'sha256',
- timeoutSeconds: 20,
- certReq: true,
+     tsaUrl: 'https://tsa.your-icpbrasil-provider.com',
+     hashAlgorithm: 'sha256',
+     timeoutSeconds: 20,
+     certReq: true,
  ))
  ->sign();
 ```
@@ -379,10 +373,10 @@ $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withBrazilPolicy(BrazilSignaturePolicyOptionsDto::serpro(
- consumerKey: 'YOUR_CONSUMER_KEY',
- consumerSecret: 'YOUR_CONSUMER_SECRET',
- hashAlgorithm: 'sha256',
- timeoutSeconds: 20
+     consumerKey: 'YOUR_CONSUMER_KEY',
+     consumerSecret: 'YOUR_CONSUMER_SECRET',
+     hashAlgorithm: 'sha256',
+     timeoutSeconds: 20
  ))
  ->sign();
 ```
@@ -398,8 +392,8 @@ use PdfSigner\Presentation\PdfSigner;
 $protectedPdf = PdfSigner::protection()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withProtection(ProtectionOptionsDto::preventCopy(
- ownerPassword: 'owner-secret',
- userPassword: ''
+     ownerPassword: 'owner-secret',
+     userPassword: ''
  ))
  ->protect();
 
@@ -419,8 +413,8 @@ use PdfSigner\Presentation\PdfSigner;
 $signedProtectedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withProtection(ProtectionOptionsDto::preventCopy(
- ownerPassword: 'owner-secret',
- userPassword: ''
+     ownerPassword: 'owner-secret',
+     userPassword: ''
  ))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->protectThenSign();
@@ -510,18 +504,18 @@ use PdfSigner\Presentation\PdfSigner;
 $validation = PdfSigner::validation()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withBrazilPolicy(
- '/path/to/icp-brasil-bundle.pem',
- new BrazilPolicyLpaUrlsDto(
- lpaUrlAsn1Pades: 'https://your-endpoint/LPA_PAdES.der',
- lpaUrlAsn1SignaturePades: 'https://your-endpoint/LPA_PAdES.p7s',
- ),
- new BrazilTrustAnchorsOptionsDto(
- directory: '/tmp/my-trust-anchors-cache',
- urls: [
- 'http://acraiz.icpbrasil.gov.br/Certificado_AC_Raiz.crt',
- 'http://acraiz.icpbrasil.gov.br/credenciadas/RAIZ/ICP-Brasilv7.crt',
- ],
- ),
+   '/path/to/icp-brasil-bundle.pem',
+   new BrazilPolicyLpaUrlsDto(
+     lpaUrlAsn1Pades: 'https://your-endpoint/LPA_PAdES.der',
+     lpaUrlAsn1SignaturePades: 'https://your-endpoint/LPA_PAdES.p7s',
+   ),
+   new BrazilTrustAnchorsOptionsDto(
+     directory: '/tmp/my-trust-anchors-cache',
+     urls: [
+       'http://acraiz.icpbrasil.gov.br/Certificado_AC_Raiz.crt',
+       'http://acraiz.icpbrasil.gov.br/credenciadas/RAIZ/ICP-Brasilv7.crt',
+     ],
+   ),
  )
  ->validate();
 ```
