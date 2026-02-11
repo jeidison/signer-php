@@ -19,10 +19,10 @@ use SignerPHP\Application\DTO\SignPdfRequestDto;
 use SignerPHP\Application\DTO\TimestampOptionsDto;
 use SignerPHP\Application\Service\PdfProtectionService;
 use SignerPHP\Application\Service\PdfSigningService;
-use SignerPHP\Domain\Exception\PdfSignerException;
+use SignerPHP\Domain\Exception\SignerException;
 use SignerPHP\Infrastructure\Native\Service\DefaultTimestampOptionsProvider;
 
-final class PdfSignerBuilder
+final class SignerBuilder
 {
     private ?PdfContentDto $content = null;
 
@@ -165,7 +165,7 @@ final class PdfSignerBuilder
     {
         $resolved = is_int($level) ? CertificationLevel::fromInt($level) : $level;
         if ($resolved === null) {
-            throw new PdfSignerException('Certification level must be one of: 1, 2 or 3.');
+            throw new SignerException('Certification level must be one of: 1, 2 or 3.');
         }
 
         $this->certificationLevel = $resolved;
@@ -185,7 +185,7 @@ final class PdfSignerBuilder
     public function protectThenSign(): string
     {
         if ($this->protection === null) {
-            throw new PdfSignerException('Protection options are required. Use withProtection().');
+            throw new SignerException('Protection options are required. Use withProtection().');
         }
 
         return $this->sign();
@@ -194,17 +194,17 @@ final class PdfSignerBuilder
     public function sign(): string
     {
         if ($this->content === null) {
-            throw new PdfSignerException('PDF content is required. Use withPdfContent().');
+            throw new SignerException('PDF content is required. Use withPdfContent().');
         }
 
         if ($this->certificate === null) {
-            throw new PdfSignerException('Certificate is required. Use withCertificatePath() or withCertificateContent().');
+            throw new SignerException('Certificate is required. Use withCertificatePath() or withCertificateContent().');
         }
 
         $pdfContent = $this->content->content;
         if ($this->protection !== null) {
             if ($this->protectionService === null) {
-                throw new PdfSignerException('Protection service is not available in this builder.');
+                throw new SignerException('Protection service is not available in this builder.');
             }
 
             $pdfContent = $this->protectionService->protect(
@@ -224,7 +224,7 @@ final class PdfSignerBuilder
             ], true)
             && $resolvedTimestamp === null
         ) {
-            throw new PdfSignerException(
+            throw new SignerException(
                 sprintf(
                     '%s requires timestamp. Use withTimestamp().',
                     match ($this->signatureProfile) {

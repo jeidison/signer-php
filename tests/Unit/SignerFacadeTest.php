@@ -7,28 +7,28 @@ namespace SignerPHP\Tests\Unit;
 use PHPUnit\Framework\TestCase;
 use SignerPHP\Presentation\PdfProtectionBuilder;
 use SignerPHP\Presentation\PdfSignatureValidatorBuilder;
-use SignerPHP\Presentation\PdfSigner;
-use SignerPHP\Presentation\PdfSignerBuilder;
+use SignerPHP\Presentation\Signer;
+use SignerPHP\Presentation\SignerBuilder;
 
-final class PdfSignerFacadeTest extends TestCase
+final class SignerFacadeTest extends TestCase
 {
     public function test_facade_returns_builder(): void
     {
-        $builder = PdfSigner::signer();
+        $builder = Signer::signer();
 
-        self::assertInstanceOf(PdfSignerBuilder::class, $builder);
+        self::assertInstanceOf(SignerBuilder::class, $builder);
     }
 
     public function test_facade_returns_protection_builder(): void
     {
-        $builder = PdfSigner::protection();
+        $builder = Signer::protection();
 
         self::assertInstanceOf(PdfProtectionBuilder::class, $builder);
     }
 
     public function test_facade_returns_signature_validator_builder(): void
     {
-        $builder = PdfSigner::validation();
+        $builder = Signer::validation();
 
         self::assertInstanceOf(PdfSignatureValidatorBuilder::class, $builder);
     }

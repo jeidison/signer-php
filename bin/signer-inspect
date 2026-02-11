@@ -3,7 +3,7 @@
 
 declare(strict_types=1);
 
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 use SignerPHP\Infrastructure\Native\Service\OpenSslCmsCertificateCollector;
 use SignerPHP\Infrastructure\Native\Service\PdfSignatureExtractor;
 use SignerPHP\Infrastructure\Native\Service\X509ExtensionUrlExtractor;
@@ -138,7 +138,7 @@ if ($pdfContent === false) {
 }
 
 try {
-    $validation = PdfSigner::validation()
+    $validation = Signer::validation()
         ->withPdfContent($pdfContent)
         ->validate();
 } catch (Throwable $throwable) {

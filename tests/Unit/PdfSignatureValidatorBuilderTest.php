@@ -12,7 +12,7 @@ use SignerPHP\Application\DTO\PdfContentDto;
 use SignerPHP\Application\DTO\SignatureValidationResultDto;
 use SignerPHP\Application\DTO\ValidatePdfRequestDto;
 use SignerPHP\Application\Service\PdfSignatureValidationService;
-use SignerPHP\Domain\Exception\PdfSignerException;
+use SignerPHP\Domain\Exception\SignerException;
 use SignerPHP\Presentation\PdfSignatureValidatorBuilder;
 
 final class PdfSignatureValidatorBuilderTest extends TestCase
@@ -21,7 +21,7 @@ final class PdfSignatureValidatorBuilderTest extends TestCase
     {
         $builder = PdfSignatureValidatorBuilder::new($this->fakeService());
 
-        $this->expectException(PdfSignerException::class);
+        $this->expectException(SignerException::class);
         $builder->validate();
     }
 

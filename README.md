@@ -15,7 +15,7 @@ If you need backend PDF signing with cryptographic validity, this library provid
 ## Main features
 
 - PKCS#12 (`.pfx/.p12`) digital signature
-- Fluent builder API (`PdfSigner::signer()`)
+- Fluent builder API (`Signer::signer()`)
 - Invisible signature
 - Visible signature with image (`PNG`/`JPEG`)
 - Automatic default visible appearance (built-in fallback)
@@ -54,9 +54,9 @@ composer require jeidison/signer-php
 ```php
 <?php
 
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$signedPdf = PdfSigner::signer()
+$signedPdf = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->sign();
@@ -71,7 +71,7 @@ If you already have PKCS#12 in memory, use content instead of a file path:
 ```php
 $pkcs12 = file_get_contents('/tmp/certificate.pfx');
 
-$signedPdf = PdfSigner::signer()
+$signedPdf = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificateContent($pkcs12, 'secret-password')
  ->sign();
@@ -84,7 +84,7 @@ $signedPdf = PdfSigner::signer()
 
 use SignerPHP\Application\DTO\SignatureActorDto;
 use SignerPHP\Application\DTO\SignatureMetadataDto;
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
 $metadata = new SignatureMetadataDto(
    reason: 'Contract approval',
@@ -95,7 +95,7 @@ $metadata = new SignatureMetadataDto(
    )
 );
 
-$signedPdf = PdfSigner::signer()
+$signedPdf = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withMetadata($metadata)
@@ -108,7 +108,7 @@ $signedPdf = PdfSigner::signer()
 <?php
 
 use SignerPHP\Application\DTO\SignatureAppearanceDto;
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
 $appearance = new SignatureAppearanceDto(
  imagePath: '/tmp/signature.png',
@@ -116,7 +116,7 @@ $appearance = new SignatureAppearanceDto(
  page: 0 // 0-based index
 );
 
-$signedPdf = PdfSigner::signer()
+$signedPdf = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withAppearance($appearance)
@@ -129,7 +129,7 @@ $signedPdf = PdfSigner::signer()
 <?php
 
 use SignerPHP\Application\DTO\SignatureAppearanceDto;
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
 $base64Image = base64_encode(file_get_contents('/tmp/signature.png'));
 
@@ -139,7 +139,7 @@ $appearance = new SignatureAppearanceDto(
  page: 0
 );
 
-$signedPdf = PdfSigner::signer()
+$signedPdf = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withAppearance($appearance)
@@ -151,9 +151,9 @@ $signedPdf = PdfSigner::signer()
 ```php
 <?php
 
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$signedPdf = PdfSigner::signer()
+$signedPdf = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withoutDefaultAppearance()
@@ -167,14 +167,14 @@ Use the signed output as input for the next signature:
 ```php
 <?php
 
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$step1 = PdfSigner::signer()
+$step1 = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/signer-a.pfx', 'password-a')
  ->sign();
 
-$step2 = PdfSigner::signer()
+$step2 = Signer::signer()
  ->withPdfContent($step1)
  ->withCertificatePath('/tmp/signer-b.pfx', 'password-b')
  ->sign();
@@ -190,9 +190,9 @@ In this case, the library uses a public default TSA (`https://freetsa.org/tsr`).
 ```php
 <?php
 
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$signedPdf = PdfSigner::signer()
+$signedPdf = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withTimestamp()
@@ -208,9 +208,9 @@ The `hashAlgorithm` field accepts `HashAlgorithm` (recommended) or a compatible 
 <?php
 
 use SignerPHP\Application\DTO\TimestampOptionsDto;
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$signedPdf = PdfSigner::signer()
+$signedPdf = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withDefaultTimestampProfile(new TimestampOptionsDto(
@@ -229,9 +229,9 @@ $signedPdf = PdfSigner::signer()
 ```php
 <?php
 
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$signedPdf = PdfSigner::signer()
+$signedPdf = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withoutTimestamp()
@@ -243,9 +243,9 @@ $signedPdf = PdfSigner::signer()
 ```php
 <?php
 
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$signedPdf = PdfSigner::signer()
+$signedPdf = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withPadesBaselineB()
@@ -257,9 +257,9 @@ $signedPdf = PdfSigner::signer()
 ```php
 <?php
 
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$signedPdf = PdfSigner::signer()
+$signedPdf = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withPadesBaselineT()
@@ -273,9 +273,9 @@ In `PAdES-T` mode, timestamp must be active (for example, `withTimestamp(...)`).
 ```php
 <?php
 
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$signedPdf = PdfSigner::signer()
+$signedPdf = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withPadesBaselineLT()
@@ -289,9 +289,9 @@ In `PAdES-LT` mode, besides timestamping, the library applies DSS enrichment wit
 ```php
 <?php
 
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$signedPdf = PdfSigner::signer()
+$signedPdf = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withPadesBaselineLTA()
@@ -306,9 +306,9 @@ In `PAdES-LTA` mode, after LT enrichment, the library adds one extra archival `D
 <?php
 
 use SignerPHP\Application\DTO\CertificationLevel;
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$signedPdf = PdfSigner::signer()
+$signedPdf = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withCertificationLevel(CertificationLevel::FormFillAndSignatures)
@@ -332,9 +332,9 @@ Default behavior:
 <?php
 
 use SignerPHP\Application\DTO\BrazilSignaturePolicyOptionsDto;
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$signedPdf = PdfSigner::signer()
+$signedPdf = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withBrazilPolicy(new BrazilSignaturePolicyOptionsDto(
@@ -367,9 +367,9 @@ SERPRO helper example:
 <?php
 
 use SignerPHP\Application\DTO\BrazilSignaturePolicyOptionsDto;
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$signedPdf = PdfSigner::signer()
+$signedPdf = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withBrazilPolicy(BrazilSignaturePolicyOptionsDto::serpro(
@@ -387,9 +387,9 @@ $signedPdf = PdfSigner::signer()
 <?php
 
 use SignerPHP\Application\DTO\ProtectionOptionsDto;
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$protectedPdf = PdfSigner::protection()
+$protectedPdf = Signer::protection()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withProtection(ProtectionOptionsDto::preventCopy(
      ownerPassword: 'owner-secret',
@@ -408,9 +408,9 @@ Use this flow to avoid ordering mistakes and ensure the signature is applied on 
 <?php
 
 use SignerPHP\Application\DTO\ProtectionOptionsDto;
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$signedProtectedPdf = PdfSigner::signer()
+$signedProtectedPdf = Signer::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withProtection(ProtectionOptionsDto::preventCopy(
      ownerPassword: 'owner-secret',
@@ -427,9 +427,9 @@ file_put_contents('/tmp/output-protected-signed.pdf', $signedProtectedPdf);
 ```php
 <?php
 
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$validation = PdfSigner::validation()
+$validation = Signer::validation()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->validate();
 
@@ -447,9 +447,9 @@ if ($validation->allValid) {
 ```php
 <?php
 
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$validation = PdfSigner::validation()
+$validation = Signer::validation()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->enableTrustChainValidation('/etc/ssl/certs/ca-certificates.crt') // optional; if omitted, tries the system default bundle
  ->validate();
@@ -464,9 +464,9 @@ foreach ($validation->entries as $entry) {
 ```php
 <?php
 
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$validation = PdfSigner::validation()
+$validation = Signer::validation()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withBrazilPolicy('/path/to/icp-brasil-bundle.pem')
  ->validate();
@@ -499,9 +499,9 @@ You can override these URLs:
 
 use SignerPHP\Application\DTO\BrazilPolicyLpaUrlsDto;
 use SignerPHP\Application\DTO\BrazilTrustAnchorsOptionsDto;
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
-$validation = PdfSigner::validation()
+$validation = Signer::validation()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withBrazilPolicy(
    '/path/to/icp-brasil-bundle.pem',
@@ -557,7 +557,7 @@ This inspection helps explain warnings reported by external validators (for exam
 ## Recommended flow (Brazil/ITI)
 
 1. Sign with `--policy=br-iti` using `bin/signer-sign`.
-2. Validate programmatically with `PdfSigner::validation()->withBrazilPolicy(...)`.
+2. Validate programmatically with `Signer::validation()->withBrazilPolicy(...)`.
 3. Inspect final PDF with `bin/signer-inspect --json`.
 4. If revocation warnings appear, check `revocation_risk_summary` and endpoint availability for OCSP/CRL URLs.
 
@@ -685,9 +685,9 @@ php bin/signer-sign --help
 
 ## Exceptions you should handle
 
-- `PdfSigner\\Domain\\Exception\\InvalidCertificateException`
-- `PdfSigner\\Domain\\Exception\\SignProcessException`
-- `PdfSigner\\Domain\\Exception\\PdfSignerException`
+- `SignerPHP\\Domain\\Exception\\InvalidCertificateException`
+- `SignerPHP\\Domain\\Exception\\SignProcessException`
+- `SignerPHP\\Domain\\Exception\\SignerException`
 
 ## Operational requirements
 

@@ -21,31 +21,31 @@ use SignerPHP\Application\DTO\SigningContextDto;
 use SignerPHP\Application\DTO\TimestampOptionsDto;
 use SignerPHP\Application\Service\PdfProtectionService;
 use SignerPHP\Application\Service\PdfSigningService;
-use SignerPHP\Domain\Exception\PdfSignerException;
+use SignerPHP\Domain\Exception\SignerException;
 use SignerPHP\Domain\ValueObject\VerifiedCertificate;
-use SignerPHP\Presentation\PdfSignerBuilder;
+use SignerPHP\Presentation\SignerBuilder;
 
-final class PdfSignerBuilderTest extends TestCase
+final class SignerBuilderTest extends TestCase
 {
     public function test_builder_requires_pdf_content(): void
     {
-        $builder = PdfSignerBuilder::new($this->fakeService());
+        $builder = SignerBuilder::new($this->fakeService());
 
-        $this->expectException(PdfSignerException::class);
+        $this->expectException(SignerException::class);
         $builder->withCertificatePath('/tmp/cert.pfx', 'pwd')->sign();
     }
 
     public function test_builder_requires_certificate(): void
     {
-        $builder = PdfSignerBuilder::new($this->fakeService());
+        $builder = SignerBuilder::new($this->fakeService());
 
-        $this->expectException(PdfSignerException::class);
+        $this->expectException(SignerException::class);
         $builder->withPdfContent('pdf')->sign();
     }
 
     public function test_builder_signs_when_all_required_inputs_are_present(): void
     {
-        $builder = PdfSignerBuilder::new($this->fakeService('signed-ok'));
+        $builder = SignerBuilder::new($this->fakeService('signed-ok'));
 
         $result = $builder
             ->withPdfContent('pdf')
@@ -82,7 +82,7 @@ final class PdfSignerBuilderTest extends TestCase
             }
         };
 
-        PdfSignerBuilder::new(new PdfSigningService($validator, $engine))
+        SignerBuilder::new(new PdfSigningService($validator, $engine))
             ->withPdfContent('pdf')
             ->withCertificateContent('PKCS12-CONTENT', 'pwd')
             ->sign();
@@ -124,7 +124,7 @@ final class PdfSignerBuilderTest extends TestCase
             }
         };
 
-        $builder = PdfSignerBuilder::new(new PdfSigningService($validator, $engine));
+        $builder = SignerBuilder::new(new PdfSigningService($validator, $engine));
         $builder
             ->withPdfContent('pdf')
             ->withCertificatePath('/tmp/cert.pfx', 'pwd')
@@ -163,7 +163,7 @@ final class PdfSignerBuilderTest extends TestCase
             }
         };
 
-        $builder = PdfSignerBuilder::new(new PdfSigningService($validator, $engine));
+        $builder = SignerBuilder::new(new PdfSigningService($validator, $engine));
         $builder
             ->withPdfContent('pdf')
             ->withCertificatePath('/tmp/cert.pfx', 'pwd')
@@ -200,7 +200,7 @@ final class PdfSignerBuilderTest extends TestCase
             }
         };
 
-        $builder = PdfSignerBuilder::new(new PdfSigningService($validator, $engine));
+        $builder = SignerBuilder::new(new PdfSigningService($validator, $engine));
         $builder
             ->withPdfContent('pdf')
             ->withCertificatePath('/tmp/cert.pfx', 'pwd')
@@ -238,7 +238,7 @@ final class PdfSignerBuilderTest extends TestCase
             }
         };
 
-        $builder = PdfSignerBuilder::new(new PdfSigningService($validator, $engine));
+        $builder = SignerBuilder::new(new PdfSigningService($validator, $engine));
         $builder
             ->withPdfContent('pdf')
             ->withCertificatePath('/tmp/cert.pfx', 'pwd')
@@ -276,7 +276,7 @@ final class PdfSignerBuilderTest extends TestCase
             }
         };
 
-        $builder = PdfSignerBuilder::new(new PdfSigningService($validator, $engine));
+        $builder = SignerBuilder::new(new PdfSigningService($validator, $engine));
         $builder
             ->withPdfContent('pdf')
             ->withCertificatePath('/tmp/cert.pfx', 'pwd')
@@ -314,7 +314,7 @@ final class PdfSignerBuilderTest extends TestCase
             }
         };
 
-        $builder = PdfSignerBuilder::new(new PdfSigningService($validator, $engine));
+        $builder = SignerBuilder::new(new PdfSigningService($validator, $engine));
         $builder
             ->withPdfContent('pdf')
             ->withCertificatePath('/tmp/cert.pfx', 'pwd')
@@ -326,9 +326,9 @@ final class PdfSignerBuilderTest extends TestCase
 
     public function test_builder_rejects_invalid_certification_level(): void
     {
-        $builder = PdfSignerBuilder::new($this->fakeService());
+        $builder = SignerBuilder::new($this->fakeService());
 
-        $this->expectException(PdfSignerException::class);
+        $this->expectException(SignerException::class);
         $this->expectExceptionMessage('Certification level must be one of: 1, 2 or 3.');
         $builder->withCertificationLevel(4);
     }
@@ -369,7 +369,7 @@ final class PdfSignerBuilderTest extends TestCase
             }
         };
 
-        $builder = PdfSignerBuilder::new(new PdfSigningService($validator, $engine));
+        $builder = SignerBuilder::new(new PdfSigningService($validator, $engine));
         $builder
             ->withPdfContent('pdf')
             ->withCertificatePath('/tmp/cert.pfx', 'pwd')
@@ -415,7 +415,7 @@ final class PdfSignerBuilderTest extends TestCase
             }
         };
 
-        $builder = PdfSignerBuilder::new(new PdfSigningService($validator, $engine));
+        $builder = SignerBuilder::new(new PdfSigningService($validator, $engine));
         $builder
             ->withPdfContent('pdf')
             ->withCertificatePath('/tmp/cert.pfx', 'pwd')
@@ -429,9 +429,9 @@ final class PdfSignerBuilderTest extends TestCase
 
     public function test_pades_baseline_t_requires_timestamp_when_default_is_disabled(): void
     {
-        $builder = PdfSignerBuilder::new($this->fakeService());
+        $builder = SignerBuilder::new($this->fakeService());
 
-        $this->expectException(PdfSignerException::class);
+        $this->expectException(SignerException::class);
         $this->expectExceptionMessage('PAdES Baseline-T requires timestamp');
         $builder
             ->withPdfContent('pdf')
@@ -443,9 +443,9 @@ final class PdfSignerBuilderTest extends TestCase
 
     public function test_pades_baseline_lt_requires_timestamp_when_default_is_disabled(): void
     {
-        $builder = PdfSignerBuilder::new($this->fakeService());
+        $builder = SignerBuilder::new($this->fakeService());
 
-        $this->expectException(PdfSignerException::class);
+        $this->expectException(SignerException::class);
         $this->expectExceptionMessage('PAdES Baseline-LT requires timestamp');
         $builder
             ->withPdfContent('pdf')
@@ -457,9 +457,9 @@ final class PdfSignerBuilderTest extends TestCase
 
     public function test_pades_baseline_lta_requires_timestamp_when_default_is_disabled(): void
     {
-        $builder = PdfSignerBuilder::new($this->fakeService());
+        $builder = SignerBuilder::new($this->fakeService());
 
-        $this->expectException(PdfSignerException::class);
+        $this->expectException(SignerException::class);
         $this->expectExceptionMessage('PAdES Baseline-LTA requires timestamp');
         $builder
             ->withPdfContent('pdf')
@@ -496,7 +496,7 @@ final class PdfSignerBuilderTest extends TestCase
             }
         };
 
-        $builder = PdfSignerBuilder::new(new PdfSigningService($validator, $engine));
+        $builder = SignerBuilder::new(new PdfSigningService($validator, $engine));
         $builder
             ->withPdfContent('pdf')
             ->withCertificatePath('/tmp/cert.pfx', 'pwd')
@@ -532,7 +532,7 @@ final class PdfSignerBuilderTest extends TestCase
             }
         };
 
-        $builder = PdfSignerBuilder::new(new PdfSigningService($validator, $engine));
+        $builder = SignerBuilder::new(new PdfSigningService($validator, $engine));
         $builder
             ->withPdfContent('pdf')
             ->withCertificatePath('/tmp/cert.pfx', 'pwd')
@@ -570,7 +570,7 @@ final class PdfSignerBuilderTest extends TestCase
             }
         };
 
-        $builder = PdfSignerBuilder::new(new PdfSigningService($validator, $engine));
+        $builder = SignerBuilder::new(new PdfSigningService($validator, $engine));
         $builder
             ->withPdfContent('pdf')
             ->withCertificatePath('/tmp/cert.pfx', 'pwd')
@@ -616,7 +616,7 @@ final class PdfSignerBuilderTest extends TestCase
             }
         };
 
-        $builder = PdfSignerBuilder::new(
+        $builder = SignerBuilder::new(
             new PdfSigningService($validator, $engine),
             null,
             $provider,
@@ -658,7 +658,7 @@ final class PdfSignerBuilderTest extends TestCase
             }
         };
 
-        $builder = PdfSignerBuilder::new(new PdfSigningService($validator, $engine));
+        $builder = SignerBuilder::new(new PdfSigningService($validator, $engine));
         $builder
             ->withPdfContent('pdf')
             ->withCertificatePath('/tmp/cert.pfx', 'pwd')
@@ -709,7 +709,7 @@ final class PdfSignerBuilderTest extends TestCase
             }
         };
 
-        $builder = PdfSignerBuilder::new(
+        $builder = SignerBuilder::new(
             new PdfSigningService($validator, $signingEngine),
             new PdfProtectionService($protectionEngine),
         );
@@ -727,9 +727,9 @@ final class PdfSignerBuilderTest extends TestCase
 
     public function test_protect_then_sign_requires_protection_options(): void
     {
-        $builder = PdfSignerBuilder::new($this->fakeService());
+        $builder = SignerBuilder::new($this->fakeService());
 
-        $this->expectException(PdfSignerException::class);
+        $this->expectException(SignerException::class);
         $builder
             ->withPdfContent('pdf')
             ->withCertificatePath('/tmp/cert.pfx', 'pwd')
@@ -769,7 +769,7 @@ final class PdfSignerBuilderTest extends TestCase
         $metadata = new SignatureMetadataDto('reason', 'location');
         $appearance = new SignatureAppearanceDto('img.png', [10, 20, 30, 40], 2);
 
-        PdfSignerBuilder::new(new PdfSigningService($validator, $engine))
+        SignerBuilder::new(new PdfSigningService($validator, $engine))
             ->withPdfContent('pdf')
             ->withCertificatePath('/tmp/cert.pfx', 'pwd')
             ->withMetadata($metadata)
@@ -782,9 +782,9 @@ final class PdfSignerBuilderTest extends TestCase
 
     public function test_sign_throws_when_protection_service_is_not_available(): void
     {
-        $builder = PdfSignerBuilder::new($this->fakeService());
+        $builder = SignerBuilder::new($this->fakeService());
 
-        $this->expectException(PdfSignerException::class);
+        $this->expectException(SignerException::class);
         $this->expectExceptionMessage('Protection service is not available in this builder.');
 
         $builder

@@ -12,9 +12,9 @@ use SignerPHP\Infrastructure\Native\NativePdfProtectionEngine;
 use SignerPHP\Infrastructure\Native\NativePdfSignatureValidationEngine;
 use SignerPHP\Infrastructure\Native\NativePdfSigningEngine;
 
-final class PdfSigner
+final class Signer
 {
-    public static function signer(): PdfSignerBuilder
+    public static function signer(): SignerBuilder
     {
         $signingService = new PdfSigningService(
             new OpenSslCertificateValidator,
@@ -22,7 +22,7 @@ final class PdfSigner
         );
         $protectionService = new PdfProtectionService(new NativePdfProtectionEngine);
 
-        return PdfSignerBuilder::new($signingService, $protectionService);
+        return SignerBuilder::new($signingService, $protectionService);
     }
 
     public static function protection(): PdfProtectionBuilder

@@ -7,7 +7,7 @@ use SignerPHP\Application\DTO\SignatureActorDto;
 use SignerPHP\Application\DTO\BrazilSignaturePolicyOptionsDto;
 use SignerPHP\Application\DTO\SignatureMetadataDto;
 use SignerPHP\Application\DTO\TimestampOptionsDto;
-use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Presentation\Signer;
 
 require __DIR__.'/../vendor/autoload.php';
 
@@ -127,7 +127,7 @@ if ($pdfContent === false) {
 }
 
 try {
-    $builder = PdfSigner::signer()
+    $builder = Signer::signer()
         ->withPdfContent($pdfContent)
         ->withCertificatePath($certificatePath, $certificatePassword);
 

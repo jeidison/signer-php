@@ -11,7 +11,7 @@ use SignerPHP\Application\DTO\SignatureValidationOptionsDto;
 use SignerPHP\Application\DTO\SignatureValidationResultDto;
 use SignerPHP\Application\DTO\ValidatePdfRequestDto;
 use SignerPHP\Application\Service\PdfSignatureValidationService;
-use SignerPHP\Domain\Exception\PdfSignerException;
+use SignerPHP\Domain\Exception\SignerException;
 
 final class PdfSignatureValidatorBuilder
 {
@@ -87,7 +87,7 @@ final class PdfSignatureValidatorBuilder
     public function validate(): SignatureValidationResultDto
     {
         if ($this->content === null) {
-            throw new PdfSignerException('PDF content is required. Use withPdfContent().');
+            throw new SignerException('PDF content is required. Use withPdfContent().');
         }
 
         return $this->service->validate(new ValidatePdfRequestDto($this->content, $this->options));

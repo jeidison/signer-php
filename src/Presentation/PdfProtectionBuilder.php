@@ -8,7 +8,7 @@ use SignerPHP\Application\DTO\PdfContentDto;
 use SignerPHP\Application\DTO\ProtectionOptionsDto;
 use SignerPHP\Application\DTO\ProtectPdfRequestDto;
 use SignerPHP\Application\Service\PdfProtectionService;
-use SignerPHP\Domain\Exception\PdfSignerException;
+use SignerPHP\Domain\Exception\SignerException;
 
 final class PdfProtectionBuilder
 {
@@ -40,11 +40,11 @@ final class PdfProtectionBuilder
     public function protect(): string
     {
         if ($this->content === null) {
-            throw new PdfSignerException('PDF content is required. Use withPdfContent().');
+            throw new SignerException('PDF content is required. Use withPdfContent().');
         }
 
         if ($this->options === null) {
-            throw new PdfSignerException('Protection options are required. Use withProtection().');
+            throw new SignerException('Protection options are required. Use withProtection().');
         }
 
         return $this->service->protect(new ProtectPdfRequestDto($this->content, $this->options));

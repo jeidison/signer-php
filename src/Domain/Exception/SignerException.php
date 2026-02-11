@@ -6,4 +6,4 @@ namespace SignerPHP\Domain\Exception;
 
 use RuntimeException;
 
-class PdfSignerException extends RuntimeException {}
+class SignerException extends RuntimeException {}

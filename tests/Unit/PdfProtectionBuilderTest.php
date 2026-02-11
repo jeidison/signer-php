@@ -9,7 +9,7 @@ use SignerPHP\Application\Contract\PdfProtectionEngineInterface;
 use SignerPHP\Application\DTO\ProtectionOptionsDto;
 use SignerPHP\Application\DTO\ProtectPdfRequestDto;
 use SignerPHP\Application\Service\PdfProtectionService;
-use SignerPHP\Domain\Exception\PdfSignerException;
+use SignerPHP\Domain\Exception\SignerException;
 use SignerPHP\Presentation\PdfProtectionBuilder;
 
 final class PdfProtectionBuilderTest extends TestCase
@@ -18,7 +18,7 @@ final class PdfProtectionBuilderTest extends TestCase
     {
         $builder = PdfProtectionBuilder::new($this->fakeService());
 
-        $this->expectException(PdfSignerException::class);
+        $this->expectException(SignerException::class);
         $builder->withProtection(new ProtectionOptionsDto(ownerPassword: 'owner'))->protect();
     }
 
@@ -26,7 +26,7 @@ final class PdfProtectionBuilderTest extends TestCase
     {
         $builder = PdfProtectionBuilder::new($this->fakeService());
 
-        $this->expectException(PdfSignerException::class);
+        $this->expectException(SignerException::class);
         $builder->withPdfContent('pdf')->protect();
     }
 
