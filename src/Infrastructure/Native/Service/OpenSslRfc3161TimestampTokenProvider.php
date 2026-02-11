@@ -101,17 +101,23 @@ final class OpenSslRfc3161TimestampTokenProvider implements TimestampTokenProvid
             throw new SignProcessException('Could not read generated RFC3161 query file.');
         }
 
-        $headers = [
-            'Content-Type: application/timestamp-query',
-            'Accept: application/timestamp-reply',
-            'Content-Length: '.strlen($query),
+        $headerMap = [
+            'Content-Type' => 'application/timestamp-query',
+            'Accept' => 'application/timestamp-reply',
+            'Content-Length' => (string) strlen($query),
         ];
 
         if ($options->oauthClientId !== null && $options->oauthClientSecret !== null && $options->oauthTokenUrl !== null) {
-            $headers[] = 'Authorization: Bearer '.$this->requestOAuthBearerToken($options);
+            $headerMap['Authorization'] = 'Bearer '.$this->requestOAuthBearerToken($options);
         } elseif ($options->username !== null && $options->password !== null) {
-            $headers[] = 'Authorization: Basic '.base64_encode($options->username.':'.$options->password);
+            $headerMap['Authorization'] = 'Basic '.base64_encode($options->username.':'.$options->password);
         }
+
+        foreach ($options->customHeaders as $name => $value) {
+            $headerMap[$name] = $value;
+        }
+
+        $headers = $this->toHeaderList($headerMap);
 
         $response = $this->httpClient->request(
             'POST',
@@ -131,6 +137,20 @@ final class OpenSslRfc3161TimestampTokenProvider implements TimestampTokenProvid
         }
 
         file_put_contents($replyFile, $response->body);
+    }
+
+    /**
+     * @param  array<string, string>  $headers
+     * @return array<int, string>
+     */
+    private function toHeaderList(array $headers): array
+    {
+        $result = [];
+        foreach ($headers as $name => $value) {
+            $result[] = $name.': '.$value;
+        }
+
+        return $result;
     }
 
     private function requestOAuthBearerToken(TimestampOptionsDto $options): string

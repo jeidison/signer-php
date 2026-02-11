@@ -104,6 +104,20 @@ final class DtoTest extends TestCase
         self::assertSame(20, $timestamp->timeoutSeconds);
     }
 
+    public function test_timestamp_options_dto_normalizes_custom_header_names(): void
+    {
+        $timestamp = new TimestampOptionsDto(
+            tsaUrl: 'https://tsa.example.com',
+            customHeaders: [
+                'content-type' => 'application/octet-stream',
+                'x-custom-header' => 'abc',
+            ],
+        );
+
+        self::assertSame('application/octet-stream', $timestamp->customHeaders['Content-Type'] ?? null);
+        self::assertSame('abc', $timestamp->customHeaders['X-Custom-Header'] ?? null);
+    }
+
     public function test_brazil_signature_policy_options_dto_builds_timestamp_options(): void
     {
         $policy = new BrazilSignaturePolicyOptionsDto(

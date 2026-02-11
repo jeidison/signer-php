@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace SignerPHP\Tests\E2E;
 
+use PHPUnit\Framework\TestCase;
 use SignerPHP\Application\DTO\SignatureActorDto;
 use SignerPHP\Application\DTO\SignatureMetadataDto;
 use SignerPHP\Presentation\Signer;
-use PHPUnit\Framework\TestCase;
 
 final class PdfGoldenContractTest extends TestCase
 {

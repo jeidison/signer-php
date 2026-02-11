@@ -60,7 +60,15 @@
         "security:audit": "composer audit --no-interaction",
         "psalm": "vendor/bin/psalm --no-progress",
         "deptrac": "vendor/bin/deptrac analyse --no-progress",
-        "infection": "vendor/bin/infection --threads=max --min-msi=65 --min-covered-msi=70"
+        "infection": "vendor/bin/infection --threads=max --min-msi=65 --min-covered-msi=70",
+        "quality:all": [
+            "@pint:check",
+            "@security:audit",
+            "@tests:coverage",
+            "@psalm",
+            "@deptrac",
+            "@infection"
+        ]
     },
     "config": {
         "allow-plugins": {

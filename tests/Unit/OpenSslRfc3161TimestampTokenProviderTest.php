@@ -128,6 +128,72 @@ final class OpenSslRfc3161TimestampTokenProviderTest extends TestCase
         ));
     }
 
+    public function test_request_token_hex_allows_custom_timestamp_headers(): void
+    {
+        $httpCalls = [];
+        $httpClient = new class($httpCalls) implements HttpClientInterface
+        {
+            /** @param array<int, array<string, mixed>> $calls */
+            public function __construct(private array &$calls) {}
+
+            public function request(
+                string $method,
+                string $url,
+                array $headers = [],
+                string $body = '',
+                int $timeoutSeconds = 10,
+                bool $followRedirects = false
+            ): HttpResponse {
+                $this->calls[] = compact('method', 'url', 'headers', 'body');
+
+                return new HttpResponse(200, 'reply-binary');
+            }
+        };
+
+        $processRunner = new class implements ProcessRunnerInterface
+        {
+            public function run(string $command): ProcessResult
+            {
+                if (str_contains($command, 'openssl ts -query')) {
+                    $out = $this->extractPath($command, '-out');
+                    file_put_contents($out, 'query-bytes');
+
+                    return new ProcessResult(0);
+                }
+
+                if (str_contains($command, 'openssl ts -reply')) {
+                    $out = $this->extractPath($command, '-out');
+                    file_put_contents($out, "\xAA");
+
+                    return new ProcessResult(0);
+                }
+
+                return new ProcessResult(1, ['unexpected command']);
+            }
+
+            private function extractPath(string $command, string $flag): string
+            {
+                preg_match('/'.preg_quote($flag, '/')." '([^']+)'/", $command, $matches);
+
+                return $matches[1] ?? '';
+            }
+        };
+
+        $provider = new OpenSslRfc3161TimestampTokenProvider($httpClient, $processRunner);
+        $provider->requestTokenHex('abcd1234', [0, 4, 4, 4], new TimestampOptionsDto(
+            tsaUrl: 'https://tsa.local/stamp',
+            customHeaders: [
+                'content-type' => 'application/octet-stream',
+                'X-Act-Key' => 'abc123',
+            ],
+        ));
+
+        self::assertCount(1, $httpCalls);
+        $headers = implode("\n", $httpCalls[0]['headers']);
+        self::assertStringContainsString('Content-Type: application/octet-stream', $headers);
+        self::assertStringContainsString('X-Act-Key: abc123', $headers);
+    }
+
     public function test_request_token_hex_throws_when_oauth_token_response_is_invalid(): void
     {
         $httpClient = new class implements HttpClientInterface
