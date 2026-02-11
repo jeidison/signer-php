@@ -1,55 +1,61 @@
 # Signer PHP (PDF Module)
 
-Biblioteca PHP para assinar PDFs digitalmente com certificado A1 (`.pfx/.p12`), com API simples e foco em produtividade.
+PHP library to digitally sign PDFs using A1 certificates (`.pfx/.p12`) with a simple, developer-friendly API.
 
-## O que este projeto resolve
+## What problem it solves
 
-Se você precisa assinar PDFs no backend com validade criptográfica, esta biblioteca oferece um fluxo direto para:
+If you need backend PDF signing with cryptographic validity, this library provides a direct flow to:
 
-- aplicar assinatura digital em PDF
-- incluir metadados do assinante
-- adicionar assinatura visível (imagem)
-- aplicar carimbo de tempo RFC3161 (TSA)
-- assinar o mesmo PDF múltiplas vezes (fluxo incremental)
+- apply digital signatures to PDF files
+- include signer metadata
+- add visible signatures (image)
+- apply RFC3161 timestamping (TSA)
+- sign the same PDF multiple times (incremental flow)
 
-## Principais features
+## Main features
 
-- Assinatura digital com PKCS#12 (`.pfx/.p12`)
-- API fluida via builder (`PdfSigner::signer()`)
-- Assinatura invisível
-- Assinatura visível com imagem (`PNG`/`JPEG`)
-- Aparência visível padrão automática (com fallback interno)
-- Metadados de assinatura (`name`, `contactInfo`, `reason`, `location`)
-- Certificação DocMDP (níveis 1, 2 e 3)
-- Modo de política Brasil (`br-iti`) com preset para assinatura
-- Perfil PAdES Baseline-B (SubFilter `ETSI.CAdES.detached`)
-- Perfil PAdES Baseline-T (PAdES-B + timestamp obrigatório)
-- Perfil PAdES Baseline-LT (PAdES-T + DSS/Certs embutidos)
-- Perfil PAdES Baseline-LTA (PAdES-LT + timestamp arquivístico adicional)
-- Múltiplas assinaturas no mesmo documento
-- Carimbo de tempo RFC3161 opcional
-- Carimbo de tempo RFC3161 com TSA público padrão quando habilitado (`withTimestamp()`)
-- Proteção de PDF por permissões (ex.: bloquear cópia de conteúdo)
-- Validação de assinaturas digitais já existentes no PDF
+- PKCS#12 (`.pfx/.p12`) digital signature
+- Fluent builder API (`PdfSigner::signer()`)
+- Invisible signature
+- Visible signature with image (`PNG`/`JPEG`)
+- Automatic default visible appearance (built-in fallback)
+- Signature metadata (`name`, `contactInfo`, `reason`, `location`)
+- DocMDP certification (levels 1, 2 and 3)
+- Brazil policy mode (`br-iti`) signing preset
+- PAdES Baseline-B profile mode (SubFilter `ETSI.CAdES.detached`)
+- PAdES Baseline-T profile mode (PAdES-B + required timestamp)
+- PAdES Baseline-LT profile mode (PAdES-T + embedded DSS/Certs)
+- PAdES Baseline-LTA profile mode (PAdES-LT + extra archival timestamp)
+- Multiple signatures in the same document
+- Optional RFC3161 timestamping
+- RFC3161 timestamping with public default TSA when enabled (`withTimestamp()`)
+- PDF permission protection (for example, block content copying)
+- Validation of existing digital signatures in PDF files
 
-## Requisitos
+## Requirements
 
 - PHP `^8.4`
 - `ext-openssl`
 - `ext-curl`
-- recomendado: `ext-zlib` e `ext-fileinfo`
+- recommended: `ext-zlib` and `ext-fileinfo`
 
-## Instalação e autoload
+## Installation and autoload
 
-Instale via Composer:
+Install with Composer:
 
 ```bash
 composer require jeidison/signer-php
 ```
 
-## Como usar
+In this repository, autoload is already configured in the root `composer.json`.
 
-### 1) Assinatura básica
+Namespace:
+
+- `PdfSigner\\...`
+
+## Usage
+
+### 1) Basic signature
 
 ```php
 <?php
@@ -64,9 +70,9 @@ $signedPdf = PdfSigner::signer()
 file_put_contents('/tmp/output-signed.pdf', $signedPdf);
 ```
 
-Por padrão, a biblioteca aplica uma aparência visível fallback com carimbo interno estilizado (imagem interna + posição padrão), para simplificar o uso.
+By default, the library applies a fallback visible appearance with a styled built-in stamp (internal image + default position) for simpler usage.
 
-Se você já tiver o PKCS#12 em memória, use conteúdo em vez de caminho:
+If you already have PKCS#12 in memory, use content instead of a file path:
 
 ```php
 $pkcs12 = file_get_contents('/tmp/certificate.pfx');
@@ -77,7 +83,7 @@ $signedPdf = PdfSigner::signer()
  ->sign();
 ```
 
-### 2) Assinatura com metadados
+### 2) Signature with metadata
 
 ```php
 <?php
@@ -90,8 +96,8 @@ $metadata = new SignatureMetadataDto(
  reason: 'Contract approval',
  location: 'Sao Paulo - BR',
  actor: new SignatureActorDto(
-    name: 'Jeidison Farias',
-    contactInfo: 'jeidison@example.com'
+ name: 'Maria Silva',
+ contactInfo: 'maria@company.com'
  )
 );
 
@@ -102,7 +108,7 @@ $signedPdf = PdfSigner::signer()
  ->sign();
 ```
 
-### 3) Assinatura visível com imagem
+### 3) Visible signature with image
 
 ```php
 <?php
@@ -113,7 +119,7 @@ use PdfSigner\Presentation\PdfSigner;
 $appearance = new SignatureAppearanceDto(
  imagePath: '/tmp/signature.png',
  rect: [350, 770, 500, 830], // [x1, y1, x2, y2]
- page: 0 // índice 0-based
+ page: 0 // 0-based index
 );
 
 $signedPdf = PdfSigner::signer()
@@ -123,7 +129,7 @@ $signedPdf = PdfSigner::signer()
  ->sign();
 ```
 
-### 4) Assinatura visível com imagem em base64
+### 4) Visible signature with base64 image
 
 ```php
 <?php
@@ -146,7 +152,7 @@ $signedPdf = PdfSigner::signer()
  ->sign();
 ```
 
-### 4.1) Desabilitar aparência padrão (assinatura invisível)
+### 4.1) Disable default appearance (invisible signature)
 
 ```php
 <?php
@@ -160,9 +166,9 @@ $signedPdf = PdfSigner::signer()
  ->sign();
 ```
 
-### 5) Múltiplas assinaturas no mesmo PDF
+### 5) Multiple signatures in the same PDF
 
-Use a saída assinada como entrada da próxima assinatura:
+Use the signed output as input for the next signature:
 
 ```php
 <?php
@@ -182,10 +188,10 @@ $step2 = PdfSigner::signer()
 file_put_contents('/tmp/output-multi-signed.pdf', $step2);
 ```
 
-### 6) Assinatura com carimbo de tempo (RFC3161)
+### 6) Signature with RFC3161 timestamp
 
-Para habilitar carimbo de tempo com configuração padrão, use `withTimestamp()`.
-Nesse caso, a lib usa um TSA público padrão (`https://freetsa.org/tsr`).
+To enable timestamping with default configuration, call `withTimestamp()`.
+In this case, the library uses a public default TSA (`https://freetsa.org/tsr`).
 
 ```php
 <?php
@@ -199,9 +205,10 @@ $signedPdf = PdfSigner::signer()
  ->sign();
 ```
 
-Se quiser customizar o TSA apenas nesse fluxo, use `withTimestamp(new TimestampOptionsDto(...))`.
+If you want a custom TSA only for this signing flow, use `withTimestamp(new TimestampOptionsDto(...))`.
+The `hashAlgorithm` field accepts `HashAlgorithm` (recommended) or a compatible `string` (`sha256`, `sha384`, `sha512`, `sha224`, `sha1`).
 
-### 6.1) Trocar o TSA padrão para este fluxo
+### 6.1) Override the default TSA for this flow
 
 ```php
 <?php
@@ -213,17 +220,17 @@ $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withDefaultTimestampProfile(new TimestampOptionsDto(
-   tsaUrl: 'https://timestamp.seu-provedor.com',
-   hashAlgorithm: 'sha256',
-   certReq: true,
-   username: null,
-   password: null,
-   timeoutSeconds: 15
+ tsaUrl: 'https://timestamp.your-provider.com',
+ hashAlgorithm: 'sha256',
+ certReq: true,
+ username: null,
+ password: null,
+ timeoutSeconds: 15
  ))
  ->sign();
 ```
 
-### 6.2) Desabilitar timestamp padrão
+### 6.2) Disable default timestamping
 
 ```php
 <?php
@@ -237,7 +244,7 @@ $signedPdf = PdfSigner::signer()
  ->sign();
 ```
 
-### 6.3) Habilitar perfil PAdES Baseline-B
+### 6.3) Enable PAdES Baseline-B profile
 
 ```php
 <?php
@@ -251,7 +258,7 @@ $signedPdf = PdfSigner::signer()
  ->sign();
 ```
 
-### 6.4) Habilitar perfil PAdES Baseline-T
+### 6.4) Enable PAdES Baseline-T profile
 
 ```php
 <?php
@@ -265,9 +272,9 @@ $signedPdf = PdfSigner::signer()
  ->sign();
 ```
 
-No perfil `PAdES-T`, a assinatura exige timestamp ativo (ex.: `withTimestamp(...)`).
+In `PAdES-T` mode, timestamp must be active (for example, `withTimestamp(...)`).
 
-### 6.5) Habilitar perfil PAdES Baseline-LT
+### 6.5) Enable PAdES Baseline-LT profile
 
 ```php
 <?php
@@ -281,9 +288,9 @@ $signedPdf = PdfSigner::signer()
  ->sign();
 ```
 
-No perfil `PAdES-LT`, além do timestamp, a lib aplica enriquecimento DSS com certificados extraídos das assinaturas CMS/RFC3161.
+In `PAdES-LT` mode, besides timestamping, the library applies DSS enrichment with certificates extracted from CMS/RFC3161 signatures.
 
-### 6.6) Habilitar perfil PAdES Baseline-LTA
+### 6.6) Enable PAdES Baseline-LTA profile
 
 ```php
 <?php
@@ -297,9 +304,9 @@ $signedPdf = PdfSigner::signer()
  ->sign();
 ```
 
-No perfil `PAdES-LTA`, após o enriquecimento LT, a lib aplica um novo `Document Timestamp` arquivístico sobre o documento final.
+In `PAdES-LTA` mode, after LT enrichment, the library adds one extra archival `Document Timestamp` on the final document revision.
 
-### 6.7) Definir certificação do documento (DocMDP)
+### 6.7) Define document certification (DocMDP)
 
 ```php
 <?php
@@ -314,18 +321,18 @@ $signedPdf = PdfSigner::signer()
  ->sign();
 ```
 
-Níveis disponíveis:
+Available levels:
 
-- `CertificationLevel::NoChangesAllowed` (`1`): não permite alterações após certificação.
-- `CertificationLevel::FormFillAndSignatures` (`2`): permite preencher formulários e novas assinaturas.
-- `CertificationLevel::FormFillSignaturesAndAnnotations` (`3`): permite formulários, assinaturas e anotações.
+- `CertificationLevel::NoChangesAllowed` (`1`): no changes allowed after certification.
+- `CertificationLevel::FormFillAndSignatures` (`2`): allows form filling and additional signatures.
+- `CertificationLevel::FormFillSignaturesAndAnnotations` (`3`): allows forms, signatures, and annotations.
 
-Padrão:
+Default behavior:
 
-- Sem `withCertificationLevel(...)`, o DocMDP não é definido explicitamente (`null`).
-- Em `withBrazilPolicy(...)`, a biblioteca força `CertificationLevel::FormFillAndSignatures` (nível `2`).
+- Without `withCertificationLevel(...)`, DocMDP is not explicitly set (`null`).
+- In `withBrazilPolicy(...)`, the library forces `CertificationLevel::FormFillAndSignatures` (level `2`).
 
-### 6.8) Modo política Brasil (br-iti)
+### 6.8) Brazil policy mode (br-iti)
 
 ```php
 <?php
@@ -337,30 +344,30 @@ $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withBrazilPolicy(new BrazilSignaturePolicyOptionsDto(
-     tsaUrl: 'https://tsa.seu-provedor-icpbrasil.com',
-     hashAlgorithm: 'sha256',
-     timeoutSeconds: 20,
-     certReq: true,
+ tsaUrl: 'https://tsa.your-icpbrasil-provider.com',
+ hashAlgorithm: 'sha256',
+ timeoutSeconds: 20,
+ certReq: true,
  ))
  ->sign();
 ```
 
-Esse preset aplica `PAdES-LTA` + `DocMDP=2` + timestamp explícito de política.
+This preset applies `PAdES-LTA` + `DocMDP=2` + explicit policy timestamp.
 
-Para trocar facilmente para outro TSA:
+To switch quickly to another TSA:
 
 ```php
-$policy = BrazilSignaturePolicyOptionsDto::tsa('https://tsa.seu-provedor.com')
+$policy = BrazilSignaturePolicyOptionsDto::tsa('https://tsa.your-provider.com')
  ->withHashAlgorithm('sha256')
  ->withTimeoutSeconds(20);
 ```
 
-Suporte SERPRO (testado):
+SERPRO support (homologation):
 
-- token OAuth2: `https://gateway.apiserpro.serpro.gov.br/token`
-- carimbo ASN.1: `https://gateway.apiserpro.serpro.gov.br/apitimestamp/v1/stamps-asn1`
+- OAuth2 token: `https://gateway.apiserpro.serpro.gov.br/token`
+- ASN.1 timestamp endpoint: `https://gateway.apiserpro.serpro.gov.br/apitimestamp/v1/stamps-asn1`
 
-Exemplo com helper SERPRO:
+SERPRO helper example:
 
 ```php
 <?php
@@ -372,15 +379,15 @@ $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->withBrazilPolicy(BrazilSignaturePolicyOptionsDto::serpro(
-     consumerKey: 'SEU_CONSUMER_KEY',
-     consumerSecret: 'SEU_CONSUMER_SECRET',
-     hashAlgorithm: 'sha256',
-     timeoutSeconds: 20
+ consumerKey: 'YOUR_CONSUMER_KEY',
+ consumerSecret: 'YOUR_CONSUMER_SECRET',
+ hashAlgorithm: 'sha256',
+ timeoutSeconds: 20
  ))
  ->sign();
 ```
 
-### 7) Proteger e Assinar PDF (bloquear cópia/impressão/modificação)
+### 7) Protect PDF (block copy/print/modify)
 
 ```php
 <?php
@@ -391,17 +398,17 @@ use PdfSigner\Presentation\PdfSigner;
 $protectedPdf = PdfSigner::protection()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withProtection(ProtectionOptionsDto::preventCopy(
-     ownerPassword: 'owner-secret',
-     userPassword: ''
+ ownerPassword: 'owner-secret',
+ userPassword: ''
  ))
  ->protect();
 
 file_put_contents('/tmp/output-protected.pdf', $protectedPdf);
 ```
 
-### 8) Fluxo recomendado: proteger e assinar no mesmo builder
+### 8) Recommended flow: protect and sign in the same builder
 
-Use este fluxo quando você quer evitar erro de ordem e garantir que a assinatura seja aplicada sobre a versão já protegida.
+Use this flow to avoid ordering mistakes and ensure the signature is applied on the already protected PDF.
 
 ```php
 <?php
@@ -412,8 +419,8 @@ use PdfSigner\Presentation\PdfSigner;
 $signedProtectedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withProtection(ProtectionOptionsDto::preventCopy(
-     ownerPassword: 'owner-secret',
-     userPassword: ''
+ ownerPassword: 'owner-secret',
+ userPassword: ''
  ))
  ->withCertificatePath('/tmp/certificate.pfx', 'secret-password')
  ->protectThenSign();
@@ -421,7 +428,7 @@ $signedProtectedPdf = PdfSigner::signer()
 file_put_contents('/tmp/output-protected-signed.pdf', $signedProtectedPdf);
 ```
 
-### 9) Validar assinaturas digitais de um PDF
+### 9) Validate digital signatures in a PDF
 
 ```php
 <?php
@@ -433,15 +440,15 @@ $validation = PdfSigner::validation()
  ->validate();
 
 if (! $validation->hasSignatures) {
- // PDF sem assinaturas
+ // PDF has no signatures
 }
 
 if ($validation->allValid) {
- // todas as assinaturas verificadas
+ // all signatures were verified
 }
 ```
 
-### 9.1) Validação com cadeia de confiança (trust store)
+### 9.1) Validation with trust chain (trust store)
 
 ```php
 <?php
@@ -450,7 +457,7 @@ use PdfSigner\Presentation\PdfSigner;
 
 $validation = PdfSigner::validation()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
- ->enableTrustChainValidation('/etc/ssl/certs/ca-certificates.crt') // opcional; se omitido tenta bundle padrão do sistema
+ ->enableTrustChainValidation('/etc/ssl/certs/ca-certificates.crt') // optional; if omitted, tries the system default bundle
  ->validate();
 
 foreach ($validation->entries as $entry) {
@@ -458,7 +465,7 @@ foreach ($validation->entries as $entry) {
 }
 ```
 
-### 9.2) Validação no modo política Brasil (br-iti)
+### 9.2) Validation with Brazil policy mode (br-iti)
 
 ```php
 <?php
@@ -467,31 +474,31 @@ use PdfSigner\Presentation\PdfSigner;
 
 $validation = PdfSigner::validation()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
- ->withBrazilPolicy('/caminho/icp-brasil-bundle.pem')
+ ->withBrazilPolicy('/path/to/icp-brasil-bundle.pem')
  ->validate();
 ```
 
-Precedência do trust store no `withBrazilPolicy(...)`:
+`withBrazilPolicy(...)` trust store precedence:
 
-- Se `trustStorePath` for informado, ele é usado diretamente.
-- Se `trustStorePath` for `null`, a lib monta/atualiza automaticamente um bundle ICP-Brasil em cache local e usa esse bundle.
+- If `trustStorePath` is provided, it is used directly.
+- If `trustStorePath` is `null`, the library automatically builds/updates a local cached ICP-Brasil bundle and uses it.
 
-Se `trustStorePath` for `null`, o modo `br-iti` monta automaticamente um bundle de trust anchors da ICP-Brasil em cache local:
+If `trustStorePath` is `null`, `br-iti` mode builds an ICP-Brasil trust anchors bundle automatically in local cache:
 
-- diretório padrão: `sys_get_temp_dir()/signer-php/trust-anchors`
-- URLs padrão:
+- default directory: `sys_get_temp_dir()/signer-php/trust-anchors`
+- default URLs:
  - `http://acraiz.icpbrasil.gov.br/Certificado_AC_Raiz.crt`
  - `http://acraiz.icpbrasil.gov.br/credenciadas/RAIZ/ICP-Brasilv2.crt`
  - `http://acraiz.icpbrasil.gov.br/credenciadas/RAIZ/ICP-Brasilv5.crt`
  - `http://acraiz.icpbrasil.gov.br/credenciadas/RAIZ/ICP-Brasilv6.crt`
  - `http://acraiz.icpbrasil.gov.br/credenciadas/RAIZ/ICP-Brasilv7.crt`
 
-No modo `br-iti`, a validação também verifica a LPA PAdES da ICP-Brasil:
+In `br-iti` mode, validation also verifies ICP-Brasil PAdES policy list (LPA):
 
 - `https://politicas.icpbrasil.gov.br/LPA_PAdES.der`
 - `https://politicas.icpbrasil.gov.br/LPA_PAdES.p7s`
 
-Você pode sobrescrever essas URLs:
+You can override these URLs:
 
 ```php
 <?php
@@ -503,68 +510,102 @@ use PdfSigner\Presentation\PdfSigner;
 $validation = PdfSigner::validation()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
  ->withBrazilPolicy(
-    '/caminho/icp-brasil-bundle.pem',
-     new BrazilPolicyLpaUrlsDto(
-         lpaUrlAsn1Pades: 'https://seu-endpoint/LPA_PAdES.der',
-         lpaUrlAsn1SignaturePades: 'https://seu-endpoint/LPA_PAdES.p7s',
-     ),
-     new BrazilTrustAnchorsOptionsDto(
-         directory: '/tmp/meu-cache-trust-anchors',
-         urls: [
-             'http://acraiz.icpbrasil.gov.br/Certificado_AC_Raiz.crt',
-             'http://acraiz.icpbrasil.gov.br/credenciadas/RAIZ/ICP-Brasilv7.crt',
-         ],
-     ),
+ '/path/to/icp-brasil-bundle.pem',
+ new BrazilPolicyLpaUrlsDto(
+ lpaUrlAsn1Pades: 'https://your-endpoint/LPA_PAdES.der',
+ lpaUrlAsn1SignaturePades: 'https://your-endpoint/LPA_PAdES.p7s',
+ ),
+ new BrazilTrustAnchorsOptionsDto(
+ directory: '/tmp/my-trust-anchors-cache',
+ urls: [
+ 'http://acraiz.icpbrasil.gov.br/Certificado_AC_Raiz.crt',
+ 'http://acraiz.icpbrasil.gov.br/credenciadas/RAIZ/ICP-Brasilv7.crt',
+ ],
+ ),
  )
  ->validate();
 ```
 
-### 9.3) Como interpretar `trustValid` e `policyValid`
+### 9.3) How to interpret `trustValid` and `policyValid`
 
-- `trustValid = true`: cadeia de certificados válida para a trust store usada.
-- `trustValid = false`: cadeia inválida, incompleta ou não confiável para a trust store usada.
-- `trustValid = null`: validação de cadeia não executada para aquela assinatura.
-- `policyValid = true`: verificação da LPA PAdES (ICP-Brasil ou URLs sobrescritas) passou.
-- `policyValid = false`: política/LPA não validou para a assinatura.
-- `policyValid = null`: política não foi solicitada no fluxo.
+- `trustValid = true`: certificate chain is valid for the trust store in use.
+- `trustValid = false`: chain is invalid, incomplete, or not trusted by the trust store in use.
+- `trustValid = null`: trust chain validation was not executed for that signature.
+- `policyValid = true`: PAdES LPA check (ICP-Brasil or overridden URLs) passed.
+- `policyValid = false`: policy/LPA check failed for that signature.
+- `policyValid = null`: policy mode was not requested in the flow.
 
-## Inspeção de assinatura via CLI
+## Signature inspection via CLI
 
-Além do comando de assinatura, o projeto expõe `bin/signer-inspect` para diagnóstico técnico de PDFs assinados.
+Besides signing, the project provides `bin/signer-inspect` for technical diagnostics of signed PDFs.
 
-### Uso básico
+### Basic usage
 
 ```bash
 php bin/signer-inspect --input=/tmp/output-signed.pdf
 ```
 
-### Saída JSON
+### JSON output
 
 ```bash
 php bin/signer-inspect --input=/tmp/output-signed.pdf --json
 ```
 
-Campos principais da inspeção:
+Main inspection fields:
 
-- `inferred_profile`: perfil inferido (`pades-baseline-b`, `t`, `lt`, `lta`).
-- `features`: presença de `DSS`, `VRI`, `DocMDP`, `OCSPs`, `CRLs`.
-- `revocation_endpoints`: OCSP/CRL por certificado encontrado.
-- `revocation_risk_summary`: flags de risco de conectividade e ausência de endpoints.
+- `inferred_profile`: inferred profile (`pades-baseline-b`, `t`, `lt`, `lta`).
+- `features`: presence of `DSS`, `VRI`, `DocMDP`, `OCSPs`, `CRLs`.
+- `revocation_endpoints`: OCSP/CRL endpoints per discovered certificate.
+- `revocation_risk_summary`: connectivity/missing-endpoint risk flags.
 
-Essa inspeção ajuda a explicar avisos em validadores externos (ex.: indisponibilidade de CRL/OCSP).
+This inspection helps explain warnings reported by external validators (for example CRL/OCSP connectivity issues).
 
-## Fluxo recomendado (Brasil/ITI)
+## Recommended flow (Brazil/ITI)
 
-1. Assine com `--policy=br-iti` no `bin/signer-sign`.
-2. Valide programaticamente com `PdfSigner::validation()->withBrazilPolicy(...)`.
-3. Inspecione o PDF final com `bin/signer-inspect --json`.
-4. Se houver ressalvas de revogação, confira `revocation_risk_summary` e a disponibilidade dos endpoints de OCSP/CRL.
+1. Sign with `--policy=br-iti` using `bin/signer-sign`.
+2. Validate programmatically with `PdfSigner::validation()->withBrazilPolicy(...)`.
+3. Inspect final PDF with `bin/signer-inspect --json`.
+4. If revocation warnings appear, check `revocation_risk_summary` and endpoint availability for OCSP/CRL URLs.
 
-## Assinando via linha de comando (CLI)
+## Running with Docker Compose
 
-O projeto expõe os executáveis `bin/signer-sign` e `bin/signer-inspect`.
+This project already includes `docker-compose.yml` and `Dockerfile` for the `app` service.
 
-### Uso básico
+### 1) Create external network (first time only)
+
+```bash
+docker network create kool_global
+```
+
+### 2) Start the service
+
+```bash
+docker compose up -d --build
+```
+
+### 3) Install dependencies
+
+```bash
+docker compose exec app composer install
+```
+
+### 4) Run tests
+
+```bash
+docker compose exec app php ./vendor/bin/pest --configuration phpunit.xml tests
+```
+
+### 5) Stop environment
+
+```bash
+docker compose down
+```
+
+## Sign using command line (CLI)
+
+The project provides `bin/signer-sign` and `bin/signer-inspect`.
+
+### Basic usage
 
 ```bash
 php bin/signer-sign \
@@ -574,7 +615,7 @@ php bin/signer-sign \
  --password='secret-password'
 ```
 
-### Exemplo com PAdES Baseline-B e timestamp explícito
+### Example with PAdES Baseline-B and explicit timestamp
 
 ```bash
 php bin/signer-sign \
@@ -588,7 +629,7 @@ php bin/signer-sign \
  --timestamp-timeout=20
 ```
 
-### Exemplo com certificação DocMDP
+### Example with DocMDP certification
 
 ```bash
 php bin/signer-sign \
@@ -599,7 +640,7 @@ php bin/signer-sign \
  --certification-level=2
 ```
 
-### Exemplo com política Brasil no CLI
+### Example with Brazil policy in CLI
 
 ```bash
 php bin/signer-sign \
@@ -608,13 +649,13 @@ php bin/signer-sign \
  --cert=/tmp/certificate.pfx \
  --password='secret-password' \
  --policy=br-iti \
- --policy-serpro-consumer-key='SEU_CONSUMER_KEY' \
- --policy-serpro-consumer-secret='SEU_CONSUMER_SECRET' \
+ --policy-serpro-consumer-key='YOUR_CONSUMER_KEY' \
+ --policy-serpro-consumer-secret='YOUR_CONSUMER_SECRET' \
  --policy-timestamp-hash='sha256' \
  --policy-timestamp-timeout=20
 ```
 
-### Exemplo com PAdES Baseline-LT
+### Example with PAdES Baseline-LT
 
 ```bash
 php bin/signer-sign \
@@ -628,7 +669,7 @@ php bin/signer-sign \
  --timestamp-timeout=20
 ```
 
-### Exemplo com PAdES Baseline-LTA
+### Example with PAdES Baseline-LTA
 
 ```bash
 php bin/signer-sign \
@@ -642,46 +683,46 @@ php bin/signer-sign \
  --timestamp-timeout=20
 ```
 
-### Ajuda de opções
+### Options help
 
 ```bash
 php bin/signer-sign --help
 ```
 
-## Exceções que você deve tratar
+## Exceptions you should handle
 
 - `PdfSigner\\Domain\\Exception\\InvalidCertificateException`
 - `PdfSigner\\Domain\\Exception\\SignProcessException`
 - `PdfSigner\\Domain\\Exception\\PdfSignerException`
 
-## Requisitos operacionais
+## Operational requirements
 
-- Para timestamp RFC3161, o host precisa ter `openssl` com suporte ao comando `openssl ts`.
-- Para proteção de PDF por permissões, o host precisa ter `qpdf` instalado.
-- Se usar TSA público padrão, considere disponibilidade/SLA em produção e prefira um provedor dedicado.
+- For RFC3161 timestamping, host `openssl` must support `openssl ts`.
+- For PDF permissions protection, host `qpdf` must be installed.
+- If you use the public default TSA, consider availability/SLA for production and prefer a dedicated provider.
 
-## Notas de implementação
+## Implementation notes
 
-- A assinatura digital cobre bytes específicos do PDF (`ByteRange`). Por isso, operações que regravem o arquivo devem ocorrer antes da assinatura.
-- A validação verifica integridade (`ByteRange`) e validade criptográfica CMS/PKCS#7 com OpenSSL. Opcionalmente, pode validar cadeia de confiança via trust store (`enableTrustChainValidation(...)`) e política Brasil (`withBrazilPolicy(...)`).
-- Perfis PAdES:
+- A digital signature covers specific PDF bytes (`ByteRange`). Because of that, operations that rewrite file bytes should run before signing.
+- Validation checks `ByteRange` integrity and CMS/PKCS#7 cryptographic validity with OpenSSL. Optionally, it can validate trust chain (`enableTrustChainValidation(...)`) and Brazil policy (`withBrazilPolicy(...)`).
+- PAdES profiles:
   - Baseline-B: `SubFilter /ETSI.CAdES.detached`
   - Baseline-T: Baseline-B + RFC3161
-  - Baseline-LT: Baseline-T + `DSS` (`Certs`, `OCSPs`, `CRLs`, `VRI`) com coleta best-effort conforme disponibilidade dos endpoints da cadeia
-  - Baseline-LTA: Baseline-LT + `Document Timestamp` arquivístico adicional
-- A aparência padrão usa `page = 0` e retângulo interno padrão; para controle total, use `withAppearance(...)`.
-- Algumas variações de PNG (filtros/modos específicos) podem ser rejeitadas.
-- Escopo técnico atual do parser PDF:
-  - Objetos com geração diferente de `0` não são suportados
-  - Extended object streams não são suportados
+  - Baseline-LT: Baseline-T + `DSS` (`Certs`, `OCSPs`, `CRLs`, `VRI`) with best-effort evidence collection depending on chain endpoint availability
+  - Baseline-LTA: Baseline-LT + additional archival `Document Timestamp`
+- Default appearance uses `page = 0` and an internal default rectangle; for full control use `withAppearance(...)`.
+- Some PNG variations (specific filters/modes) may be rejected.
+- Current PDF parser technical scope:
+  - Objects with generation different from `0` are not supported
+  - Extended object streams are not supported
 
-## Executando os testes
+## Running tests
 
 ```bash
 vendor/bin/pest --configuration phpunit.xml tests
 ```
 
-## Qualidade de código
+## Code quality
 
 ```bash
 composer pint:check
