@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Domain\Exception\SignProcessException;
-use PdfSigner\Infrastructure\Native\Service\DocumentTimestampApplier;
-use PdfSigner\Infrastructure\PdfCore\Signature;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Domain\Exception\SignProcessException;
+use SignerPHP\Infrastructure\Native\Service\DocumentTimestampApplier;
+use SignerPHP\Infrastructure\PdfCore\Signature;
 
 final class DocumentTimestampApplierInternalsTest extends TestCase
 {

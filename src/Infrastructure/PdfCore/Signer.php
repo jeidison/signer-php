@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore;
+namespace SignerPHP\Infrastructure\PdfCore;
 
 use DateTime;
-use PdfSigner\Infrastructure\PdfCore\Exception\PdfCoreSigningException;
-use PdfSigner\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueHexString;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
-use PdfSigner\Infrastructure\PdfCore\Xref\Xref;
+use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreSigningException;
+use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueHexString;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
+use SignerPHP\Infrastructure\PdfCore\Xref\Xref;
 
 /**
  * @author Jeidison Farias <jeidison.farias@gmail.com>

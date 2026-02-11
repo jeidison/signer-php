@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Infrastructure\PdfCore\Utils\Mime;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\PdfCore\Utils\Mime;
 
 final class MimeTest extends TestCase
 {

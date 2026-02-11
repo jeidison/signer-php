@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\Native\Service;
+namespace SignerPHP\Infrastructure\Native\Service;
 
-use PdfSigner\Infrastructure\Native\Contract\HttpClientInterface;
-use PdfSigner\Infrastructure\Native\Contract\ProcessRunnerInterface;
-use PdfSigner\Infrastructure\Native\Contract\SignatureRevocationEvidenceCollectorInterface;
+use SignerPHP\Infrastructure\Native\Contract\HttpClientInterface;
+use SignerPHP\Infrastructure\Native\Contract\ProcessRunnerInterface;
+use SignerPHP\Infrastructure\Native\Contract\SignatureRevocationEvidenceCollectorInterface;
 
 final readonly class OpenSslRevocationEvidenceCollector implements SignatureRevocationEvidenceCollectorInterface
 {

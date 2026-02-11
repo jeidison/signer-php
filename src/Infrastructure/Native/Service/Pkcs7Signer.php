@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\Native\Service;
+namespace SignerPHP\Infrastructure\Native\Service;
 
-use PdfSigner\Domain\Exception\SignProcessException;
-use PdfSigner\Infrastructure\Native\Contract\Pkcs7SignerInterface;
-use PdfSigner\Infrastructure\PdfCore\Buffer;
-use PdfSigner\Infrastructure\PdfCore\Signature;
+use SignerPHP\Domain\Exception\SignProcessException;
+use SignerPHP\Infrastructure\Native\Contract\Pkcs7SignerInterface;
+use SignerPHP\Infrastructure\PdfCore\Buffer;
+use SignerPHP\Infrastructure\PdfCore\Signature;
 
 final class Pkcs7Signer implements Pkcs7SignerInterface
 {

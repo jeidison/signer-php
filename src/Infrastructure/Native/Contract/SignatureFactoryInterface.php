@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\Native\Contract;
+namespace SignerPHP\Infrastructure\Native\Contract;
 
-use PdfSigner\Application\DTO\SigningContextDto;
-use PdfSigner\Infrastructure\PdfCore\PdfDocument;
-use PdfSigner\Infrastructure\PdfCore\Signature;
+use SignerPHP\Application\DTO\SigningContextDto;
+use SignerPHP\Infrastructure\PdfCore\PdfDocument;
+use SignerPHP\Infrastructure\PdfCore\Signature;
 
 interface SignatureFactoryInterface
 {

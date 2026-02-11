@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Infrastructure\PdfCore\Xref\Service\XRef14Parser;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\PdfCore\Xref\Service\XRef14Parser;
 
 final class XRef14ParserTest extends TestCase
 {

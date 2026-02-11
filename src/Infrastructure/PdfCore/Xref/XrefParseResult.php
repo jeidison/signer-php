@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore\Xref;
+namespace SignerPHP\Infrastructure\PdfCore\Xref;
 
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValue;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValue;
 
 final readonly class XrefParseResult
 {

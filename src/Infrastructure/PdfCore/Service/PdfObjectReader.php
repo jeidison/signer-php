@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore\Service;
+namespace SignerPHP\Infrastructure\PdfCore\Service;
 
-use PdfSigner\Infrastructure\PdfCore\Exception\PdfCoreParsingException;
-use PdfSigner\Infrastructure\PdfCore\ObjectParser;
-use PdfSigner\Infrastructure\PdfCore\PDFObject;
-use PdfSigner\Infrastructure\PdfCore\StreamReader;
+use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreParsingException;
+use SignerPHP\Infrastructure\PdfCore\ObjectParser;
+use SignerPHP\Infrastructure\PdfCore\PDFObject;
+use SignerPHP\Infrastructure\PdfCore\StreamReader;
 
 final class PdfObjectReader
 {

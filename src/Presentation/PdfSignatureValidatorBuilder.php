@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Presentation;
+namespace SignerPHP\Presentation;
 
-use PdfSigner\Application\DTO\BrazilPolicyLpaUrlsDto;
-use PdfSigner\Application\DTO\BrazilTrustAnchorsOptionsDto;
-use PdfSigner\Application\DTO\PdfContentDto;
-use PdfSigner\Application\DTO\SignatureValidationOptionsDto;
-use PdfSigner\Application\DTO\SignatureValidationResultDto;
-use PdfSigner\Application\DTO\ValidatePdfRequestDto;
-use PdfSigner\Application\Service\PdfSignatureValidationService;
-use PdfSigner\Domain\Exception\PdfSignerException;
+use SignerPHP\Application\DTO\BrazilPolicyLpaUrlsDto;
+use SignerPHP\Application\DTO\BrazilTrustAnchorsOptionsDto;
+use SignerPHP\Application\DTO\PdfContentDto;
+use SignerPHP\Application\DTO\SignatureValidationOptionsDto;
+use SignerPHP\Application\DTO\SignatureValidationResultDto;
+use SignerPHP\Application\DTO\ValidatePdfRequestDto;
+use SignerPHP\Application\Service\PdfSignatureValidationService;
+use SignerPHP\Domain\Exception\PdfSignerException;
 
 final class PdfSignatureValidatorBuilder
 {

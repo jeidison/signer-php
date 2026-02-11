@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Infrastructure\Native\Contract\HttpClientInterface;
-use PdfSigner\Infrastructure\Native\Service\IcpBrasilTrustAnchorBundleProvider;
-use PdfSigner\Infrastructure\Native\ValueObject\HttpResponse;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\Native\Contract\HttpClientInterface;
+use SignerPHP\Infrastructure\Native\Service\IcpBrasilTrustAnchorBundleProvider;
+use SignerPHP\Infrastructure\Native\ValueObject\HttpResponse;
 
 final class IcpBrasilTrustAnchorBundleProviderTest extends TestCase
 {

@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\Native\Service;
+namespace SignerPHP\Infrastructure\Native\Service;
 
-use PdfSigner\Application\DTO\SignatureProfile;
-use PdfSigner\Application\DTO\SigningContextDto;
-use PdfSigner\Infrastructure\Native\Contract\DocumentTimestampApplierInterface;
-use PdfSigner\Infrastructure\Native\Contract\LongTermValidationApplierInterface;
-use PdfSigner\Infrastructure\Native\Contract\Pkcs7SignerInterface;
-use PdfSigner\Infrastructure\Native\Contract\SignedBufferBuilderInterface;
-use PdfSigner\Infrastructure\Native\Contract\XrefContentResolverInterface;
-use PdfSigner\Infrastructure\PdfCore\Buffer;
-use PdfSigner\Infrastructure\PdfCore\PdfDocument;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueHexString;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
-use PdfSigner\Infrastructure\PdfCore\Signature;
-use PdfSigner\Infrastructure\PdfCore\Xref\Xref;
+use SignerPHP\Application\DTO\SignatureProfile;
+use SignerPHP\Application\DTO\SigningContextDto;
+use SignerPHP\Infrastructure\Native\Contract\DocumentTimestampApplierInterface;
+use SignerPHP\Infrastructure\Native\Contract\LongTermValidationApplierInterface;
+use SignerPHP\Infrastructure\Native\Contract\Pkcs7SignerInterface;
+use SignerPHP\Infrastructure\Native\Contract\SignedBufferBuilderInterface;
+use SignerPHP\Infrastructure\Native\Contract\XrefContentResolverInterface;
+use SignerPHP\Infrastructure\PdfCore\Buffer;
+use SignerPHP\Infrastructure\PdfCore\PdfDocument;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueHexString;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
+use SignerPHP\Infrastructure\PdfCore\Signature;
+use SignerPHP\Infrastructure\PdfCore\Xref\Xref;
 
 final readonly class SignedBufferBuilder implements SignedBufferBuilderInterface
 {

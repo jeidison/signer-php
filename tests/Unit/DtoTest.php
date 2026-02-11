@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
 use InvalidArgumentException;
-use PdfSigner\Application\DTO\BrazilSignaturePolicyOptionsDto;
-use PdfSigner\Application\DTO\BrazilTrustAnchorsOptionsDto;
-use PdfSigner\Application\DTO\CertificateCredentialsDto;
-use PdfSigner\Application\DTO\HashAlgorithm;
-use PdfSigner\Application\DTO\PdfContentDto;
-use PdfSigner\Application\DTO\ProtectionOptionsDto;
-use PdfSigner\Application\DTO\SignatureActorDto;
-use PdfSigner\Application\DTO\SignatureAppearanceDto;
-use PdfSigner\Application\DTO\SignatureMetadataDto;
-use PdfSigner\Application\DTO\SignatureProfile;
-use PdfSigner\Application\DTO\SigningOptionsDto;
-use PdfSigner\Application\DTO\SignPdfRequestDto;
-use PdfSigner\Application\DTO\TimestampOptionsDto;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Application\DTO\BrazilSignaturePolicyOptionsDto;
+use SignerPHP\Application\DTO\BrazilTrustAnchorsOptionsDto;
+use SignerPHP\Application\DTO\CertificateCredentialsDto;
+use SignerPHP\Application\DTO\HashAlgorithm;
+use SignerPHP\Application\DTO\PdfContentDto;
+use SignerPHP\Application\DTO\ProtectionOptionsDto;
+use SignerPHP\Application\DTO\SignatureActorDto;
+use SignerPHP\Application\DTO\SignatureAppearanceDto;
+use SignerPHP\Application\DTO\SignatureMetadataDto;
+use SignerPHP\Application\DTO\SignatureProfile;
+use SignerPHP\Application\DTO\SigningOptionsDto;
+use SignerPHP\Application\DTO\SignPdfRequestDto;
+use SignerPHP\Application\DTO\TimestampOptionsDto;
 
 final class DtoTest extends TestCase
 {

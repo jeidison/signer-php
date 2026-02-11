@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore\Utils;
+namespace SignerPHP\Infrastructure\PdfCore\Utils;
 
 final class ContentGeneration
 {

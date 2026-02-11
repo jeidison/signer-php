@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore;
+namespace SignerPHP\Infrastructure\PdfCore;
 
 final readonly class PageDescriptor
 {

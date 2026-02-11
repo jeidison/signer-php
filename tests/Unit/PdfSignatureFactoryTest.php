@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Application\DTO\CertificateCredentialsDto;
-use PdfSigner\Application\DTO\CertificationLevel;
-use PdfSigner\Application\DTO\PdfContentDto;
-use PdfSigner\Application\DTO\SignatureAppearanceDto;
-use PdfSigner\Application\DTO\SignatureProfile;
-use PdfSigner\Application\DTO\SigningContextDto;
-use PdfSigner\Application\DTO\SigningOptionsDto;
-use PdfSigner\Application\DTO\SignPdfRequestDto;
-use PdfSigner\Domain\ValueObject\VerifiedCertificate;
-use PdfSigner\Infrastructure\Native\Contract\DefaultSignatureAppearanceProviderInterface;
-use PdfSigner\Infrastructure\Native\Service\PdfSignatureFactory;
-use PdfSigner\Infrastructure\PdfCore\PdfDocument;
-use PdfSigner\Infrastructure\PdfCore\Signature;
-use PdfSigner\Infrastructure\PdfCore\SignatureAppearance;
-use PdfSigner\Infrastructure\PdfCore\SignatureObject;
+use SignerPHP\Application\DTO\CertificateCredentialsDto;
+use SignerPHP\Application\DTO\CertificationLevel;
+use SignerPHP\Application\DTO\PdfContentDto;
+use SignerPHP\Application\DTO\SignatureAppearanceDto;
+use SignerPHP\Application\DTO\SignatureProfile;
+use SignerPHP\Application\DTO\SigningContextDto;
+use SignerPHP\Application\DTO\SigningOptionsDto;
+use SignerPHP\Application\DTO\SignPdfRequestDto;
+use SignerPHP\Domain\ValueObject\VerifiedCertificate;
+use SignerPHP\Infrastructure\Native\Contract\DefaultSignatureAppearanceProviderInterface;
+use SignerPHP\Infrastructure\Native\Service\PdfSignatureFactory;
+use SignerPHP\Infrastructure\PdfCore\PdfDocument;
+use SignerPHP\Infrastructure\PdfCore\Signature;
+use SignerPHP\Infrastructure\PdfCore\SignatureAppearance;
+use SignerPHP\Infrastructure\PdfCore\SignatureObject;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 

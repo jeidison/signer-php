@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Infrastructure\PdfCore\PdfDocument;
-use PdfSigner\Infrastructure\PdfCore\PDFObject;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueObject;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueReference;
-use PdfSigner\Infrastructure\PdfCore\Service\DocumentTimestampObjectAssembler;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\PdfCore\PdfDocument;
+use SignerPHP\Infrastructure\PdfCore\PDFObject;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueObject;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueReference;
+use SignerPHP\Infrastructure\PdfCore\Service\DocumentTimestampObjectAssembler;
 
 final class DocumentTimestampObjectAssemblerTest extends TestCase
 {

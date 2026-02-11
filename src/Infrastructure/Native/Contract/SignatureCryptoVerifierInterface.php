@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\Native\Contract;
+namespace SignerPHP\Infrastructure\Native\Contract;
 
-use PdfSigner\Infrastructure\Native\ValueObject\SignatureCryptoVerification;
+use SignerPHP\Infrastructure\Native\ValueObject\SignatureCryptoVerification;
 
 interface SignatureCryptoVerifierInterface
 {

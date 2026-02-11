@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore\Service;
+namespace SignerPHP\Infrastructure\PdfCore\Service;
 
-use PdfSigner\Infrastructure\PdfCore\DocumentTimestampObject;
-use PdfSigner\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
-use PdfSigner\Infrastructure\PdfCore\PdfDocument;
-use PdfSigner\Infrastructure\PdfCore\PDFObject;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueObject;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueReference;
+use SignerPHP\Infrastructure\PdfCore\DocumentTimestampObject;
+use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
+use SignerPHP\Infrastructure\PdfCore\PdfDocument;
+use SignerPHP\Infrastructure\PdfCore\PDFObject;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueObject;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueReference;
 
 final class DocumentTimestampObjectAssembler
 {

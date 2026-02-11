@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Application\DTO\CertificateCredentialsDto;
-use PdfSigner\Domain\Exception\InvalidCertificateException;
-use PdfSigner\Infrastructure\Legacy\LegacyFunctionOverrideState;
-use PdfSigner\Infrastructure\Legacy\OpenSslCertificateValidator;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Application\DTO\CertificateCredentialsDto;
+use SignerPHP\Domain\Exception\InvalidCertificateException;
+use SignerPHP\Infrastructure\Legacy\LegacyFunctionOverrideState;
+use SignerPHP\Infrastructure\Legacy\OpenSslCertificateValidator;
 
 final class OpenSslCertificateValidatorTest extends TestCase
 {

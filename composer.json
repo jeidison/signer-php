@@ -37,12 +37,12 @@
     "license": "MIT",
     "autoload": {
         "psr-4": {
-            "PdfSigner\\": "src/"
+            "SignerPHP\\": "src/"
         }
     },
     "autoload-dev": {
         "psr-4": {
-            "PdfSigner\\Tests\\": "tests/"
+            "SignerPHP\\Tests\\": "tests/"
         }
     },
     "authors": [

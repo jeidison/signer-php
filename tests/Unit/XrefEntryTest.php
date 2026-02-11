@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Infrastructure\PdfCore\XrefEntry;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\PdfCore\XrefEntry;
 
 final class XrefEntryTest extends TestCase
 {

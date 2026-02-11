@@ -2,22 +2,22 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Application\DTO\CertificateCredentialsDto;
-use PdfSigner\Application\DTO\PdfContentDto;
-use PdfSigner\Application\DTO\SigningContextDto;
-use PdfSigner\Application\DTO\SigningOptionsDto;
-use PdfSigner\Application\DTO\SignPdfRequestDto;
-use PdfSigner\Domain\Exception\SignProcessException;
-use PdfSigner\Domain\ValueObject\VerifiedCertificate;
-use PdfSigner\Infrastructure\Native\Contract\PdfDocumentPreparerInterface;
-use PdfSigner\Infrastructure\Native\Contract\SignatureFactoryInterface;
-use PdfSigner\Infrastructure\Native\Contract\SignedBufferBuilderInterface;
-use PdfSigner\Infrastructure\Native\NativePdfSigningEngine;
-use PdfSigner\Infrastructure\PdfCore\Buffer;
-use PdfSigner\Infrastructure\PdfCore\PdfDocument;
-use PdfSigner\Infrastructure\PdfCore\Signature;
+use SignerPHP\Application\DTO\CertificateCredentialsDto;
+use SignerPHP\Application\DTO\PdfContentDto;
+use SignerPHP\Application\DTO\SigningContextDto;
+use SignerPHP\Application\DTO\SigningOptionsDto;
+use SignerPHP\Application\DTO\SignPdfRequestDto;
+use SignerPHP\Domain\Exception\SignProcessException;
+use SignerPHP\Domain\ValueObject\VerifiedCertificate;
+use SignerPHP\Infrastructure\Native\Contract\PdfDocumentPreparerInterface;
+use SignerPHP\Infrastructure\Native\Contract\SignatureFactoryInterface;
+use SignerPHP\Infrastructure\Native\Contract\SignedBufferBuilderInterface;
+use SignerPHP\Infrastructure\Native\NativePdfSigningEngine;
+use SignerPHP\Infrastructure\PdfCore\Buffer;
+use SignerPHP\Infrastructure\PdfCore\PdfDocument;
+use SignerPHP\Infrastructure\PdfCore\Signature;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
 

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\Native\Service;
+namespace SignerPHP\Infrastructure\Native\Service;
 
-use PdfSigner\Infrastructure\Native\Contract\PdfDocumentPreparerInterface;
-use PdfSigner\Infrastructure\PdfCore\PdfDocument;
-use PdfSigner\Infrastructure\PdfCore\Struct;
+use SignerPHP\Infrastructure\Native\Contract\PdfDocumentPreparerInterface;
+use SignerPHP\Infrastructure\PdfCore\PdfDocument;
+use SignerPHP\Infrastructure\PdfCore\Struct;
 
 final class PdfDocumentPreparer implements PdfDocumentPreparerInterface
 {

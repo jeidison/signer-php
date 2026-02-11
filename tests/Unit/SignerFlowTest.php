@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Infrastructure\PdfCore\Signer;
-use PdfSigner\Tests\Support\PdfFixtureFactory;
+use SignerPHP\Infrastructure\PdfCore\Signer;
+use SignerPHP\Tests\Support\PdfFixtureFactory;
 use PHPUnit\Framework\TestCase;
 
 final class SignerFlowTest extends TestCase

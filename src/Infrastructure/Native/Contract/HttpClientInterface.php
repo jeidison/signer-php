@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\Native\Contract;
+namespace SignerPHP\Infrastructure\Native\Contract;
 
-use PdfSigner\Infrastructure\Native\ValueObject\HttpResponse;
+use SignerPHP\Infrastructure\Native\ValueObject\HttpResponse;
 
 interface HttpClientInterface
 {

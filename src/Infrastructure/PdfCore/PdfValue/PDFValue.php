@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore\PdfValue;
+namespace SignerPHP\Infrastructure\PdfCore\PdfValue;
 
 use ArrayAccess;
-use PdfSigner\Infrastructure\PdfCore\Compat\LegacyPdfValueCompat;
-use PdfSigner\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
+use SignerPHP\Infrastructure\PdfCore\Compat\LegacyPdfValueCompat;
+use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
 use Stringable;
 
 abstract class PDFValue implements ArrayAccess, Stringable

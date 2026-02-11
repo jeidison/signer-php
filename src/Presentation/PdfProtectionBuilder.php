@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Presentation;
+namespace SignerPHP\Presentation;
 
-use PdfSigner\Application\DTO\PdfContentDto;
-use PdfSigner\Application\DTO\ProtectionOptionsDto;
-use PdfSigner\Application\DTO\ProtectPdfRequestDto;
-use PdfSigner\Application\Service\PdfProtectionService;
-use PdfSigner\Domain\Exception\PdfSignerException;
+use SignerPHP\Application\DTO\PdfContentDto;
+use SignerPHP\Application\DTO\ProtectionOptionsDto;
+use SignerPHP\Application\DTO\ProtectPdfRequestDto;
+use SignerPHP\Application\Service\PdfProtectionService;
+use SignerPHP\Domain\Exception\PdfSignerException;
 
 final class PdfProtectionBuilder
 {

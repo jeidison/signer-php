@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore;
+namespace SignerPHP\Infrastructure\PdfCore;
 
-use PdfSigner\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
+use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
 
 class PageInfo
 {

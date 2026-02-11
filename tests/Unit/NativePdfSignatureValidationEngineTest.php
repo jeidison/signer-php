@@ -2,23 +2,23 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Application\DTO\PdfContentDto;
-use PdfSigner\Application\DTO\SignatureValidationOptionsDto;
-use PdfSigner\Application\DTO\ValidatePdfRequestDto;
-use PdfSigner\Domain\Exception\SignatureValidationException;
-use PdfSigner\Infrastructure\Native\Contract\BrazilPolicyListVerifierInterface;
-use PdfSigner\Infrastructure\Native\Contract\PdfSignatureExtractorInterface;
-use PdfSigner\Infrastructure\Native\Contract\SignatureCryptoVerifierInterface;
-use PdfSigner\Infrastructure\Native\Contract\SignatureTrustVerifierInterface;
-use PdfSigner\Infrastructure\Native\NativePdfSignatureValidationEngine;
-use PdfSigner\Infrastructure\Native\ValueObject\ExtractedPdfSignature;
-use PdfSigner\Infrastructure\Native\ValueObject\SignatureCryptoVerification;
-use PdfSigner\Infrastructure\Native\ValueObject\SignaturePolicyVerification;
-use PdfSigner\Infrastructure\Native\ValueObject\SignatureTrustVerification;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use SignerPHP\Application\DTO\PdfContentDto;
+use SignerPHP\Application\DTO\SignatureValidationOptionsDto;
+use SignerPHP\Application\DTO\ValidatePdfRequestDto;
+use SignerPHP\Domain\Exception\SignatureValidationException;
+use SignerPHP\Infrastructure\Native\Contract\BrazilPolicyListVerifierInterface;
+use SignerPHP\Infrastructure\Native\Contract\PdfSignatureExtractorInterface;
+use SignerPHP\Infrastructure\Native\Contract\SignatureCryptoVerifierInterface;
+use SignerPHP\Infrastructure\Native\Contract\SignatureTrustVerifierInterface;
+use SignerPHP\Infrastructure\Native\NativePdfSignatureValidationEngine;
+use SignerPHP\Infrastructure\Native\ValueObject\ExtractedPdfSignature;
+use SignerPHP\Infrastructure\Native\ValueObject\SignatureCryptoVerification;
+use SignerPHP\Infrastructure\Native\ValueObject\SignaturePolicyVerification;
+use SignerPHP\Infrastructure\Native\ValueObject\SignatureTrustVerification;
 
 final class NativePdfSignatureValidationEngineTest extends TestCase
 {
@@ -42,7 +42,7 @@ final class NativePdfSignatureValidationEngineTest extends TestCase
 
         $trustVerifier = new class implements SignatureTrustVerifierInterface
         {
-            public function verify(string $signatureHex, \PdfSigner\Application\DTO\SignatureValidationOptionsDto $options): SignatureTrustVerification
+            public function verify(string $signatureHex, \SignerPHP\Application\DTO\SignatureValidationOptionsDto $options): SignatureTrustVerification
             {
                 return new SignatureTrustVerification(true);
             }
@@ -85,7 +85,7 @@ final class NativePdfSignatureValidationEngineTest extends TestCase
 
         $trustVerifier = new class implements SignatureTrustVerifierInterface
         {
-            public function verify(string $signatureHex, \PdfSigner\Application\DTO\SignatureValidationOptionsDto $options): SignatureTrustVerification
+            public function verify(string $signatureHex, \SignerPHP\Application\DTO\SignatureValidationOptionsDto $options): SignatureTrustVerification
             {
                 return new SignatureTrustVerification(true);
             }
@@ -131,7 +131,7 @@ final class NativePdfSignatureValidationEngineTest extends TestCase
 
         $trustVerifier = new class implements SignatureTrustVerifierInterface
         {
-            public function verify(string $signatureHex, \PdfSigner\Application\DTO\SignatureValidationOptionsDto $options): SignatureTrustVerification
+            public function verify(string $signatureHex, \SignerPHP\Application\DTO\SignatureValidationOptionsDto $options): SignatureTrustVerification
             {
                 return new SignatureTrustVerification(true);
             }

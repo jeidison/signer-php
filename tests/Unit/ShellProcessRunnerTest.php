@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Infrastructure\Native\Service\ShellProcessRunner;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\Native\Service\ShellProcessRunner;
 
 final class ShellProcessRunnerTest extends TestCase
 {

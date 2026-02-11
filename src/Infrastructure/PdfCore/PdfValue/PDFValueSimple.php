@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore\PdfValue;
+namespace SignerPHP\Infrastructure\PdfCore\PdfValue;
 
 class PDFValueSimple extends PDFValue
 {

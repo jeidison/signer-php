@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Application\DTO\SignatureValidationOptionsDto;
-use PdfSigner\Infrastructure\Native\Contract\HttpClientInterface;
-use PdfSigner\Infrastructure\Native\Contract\ProcessRunnerInterface;
-use PdfSigner\Infrastructure\Native\Service\OpenSslBrazilPolicyListVerifier;
-use PdfSigner\Infrastructure\Native\ValueObject\HttpResponse;
-use PdfSigner\Infrastructure\Native\ValueObject\ProcessResult;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Application\DTO\SignatureValidationOptionsDto;
+use SignerPHP\Infrastructure\Native\Contract\HttpClientInterface;
+use SignerPHP\Infrastructure\Native\Contract\ProcessRunnerInterface;
+use SignerPHP\Infrastructure\Native\Service\OpenSslBrazilPolicyListVerifier;
+use SignerPHP\Infrastructure\Native\ValueObject\HttpResponse;
+use SignerPHP\Infrastructure\Native\ValueObject\ProcessResult;
 
 final class OpenSslBrazilPolicyListVerifierTest extends TestCase
 {

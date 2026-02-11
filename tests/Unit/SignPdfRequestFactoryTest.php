@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Application\DTO\CertificateCredentialsDto;
-use PdfSigner\Application\DTO\PdfContentDto;
-use PdfSigner\Application\DTO\SignatureActorDto;
-use PdfSigner\Application\DTO\SignatureAppearanceDto;
-use PdfSigner\Application\DTO\SignatureMetadataDto;
-use PdfSigner\Application\DTO\SigningOptionsDto;
-use PdfSigner\Application\Factory\SignPdfRequestFactory;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Application\DTO\CertificateCredentialsDto;
+use SignerPHP\Application\DTO\PdfContentDto;
+use SignerPHP\Application\DTO\SignatureActorDto;
+use SignerPHP\Application\DTO\SignatureAppearanceDto;
+use SignerPHP\Application\DTO\SignatureMetadataDto;
+use SignerPHP\Application\DTO\SigningOptionsDto;
+use SignerPHP\Application\Factory\SignPdfRequestFactory;
 
 final class SignPdfRequestFactoryTest extends TestCase
 {

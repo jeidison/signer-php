@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
-use PdfSigner\Infrastructure\PdfCore\Xref\XrefParseResult;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
+use SignerPHP\Infrastructure\PdfCore\Xref\XrefParseResult;
 
 final class XrefParseResultTest extends TestCase
 {

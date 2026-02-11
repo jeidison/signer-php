@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Infrastructure\PdfCore\StreamReader;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\PdfCore\StreamReader;
 
 final class StreamReaderTest extends TestCase
 {

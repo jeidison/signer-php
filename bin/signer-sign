@@ -3,11 +3,11 @@
 
 declare(strict_types=1);
 
-use PdfSigner\Application\DTO\SignatureActorDto;
-use PdfSigner\Application\DTO\BrazilSignaturePolicyOptionsDto;
-use PdfSigner\Application\DTO\SignatureMetadataDto;
-use PdfSigner\Application\DTO\TimestampOptionsDto;
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Application\DTO\SignatureActorDto;
+use SignerPHP\Application\DTO\BrazilSignaturePolicyOptionsDto;
+use SignerPHP\Application\DTO\SignatureMetadataDto;
+use SignerPHP\Application\DTO\TimestampOptionsDto;
+use SignerPHP\Presentation\PdfSigner;
 
 require __DIR__.'/../vendor/autoload.php';
 

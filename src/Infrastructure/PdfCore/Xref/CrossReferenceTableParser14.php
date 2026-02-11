@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore\Xref;
+namespace SignerPHP\Infrastructure\PdfCore\Xref;
 
 /**
  * Clearer alias for legacy XRef14 parser facade.

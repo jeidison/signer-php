@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Infrastructure\Native\Service\PdfDocumentPreparer;
-use PdfSigner\Tests\Support\PdfFixtureFactory;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\Native\Service\PdfDocumentPreparer;
+use SignerPHP\Tests\Support\PdfFixtureFactory;
 
 final class PdfDocumentPreparerTest extends TestCase
 {

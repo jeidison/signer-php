@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\Native\Service;
+namespace SignerPHP\Infrastructure\Native\Service;
 
-use PdfSigner\Domain\Exception\SignatureValidationException;
-use PdfSigner\Infrastructure\Native\Contract\ProcessRunnerInterface;
-use PdfSigner\Infrastructure\Native\Contract\SignatureCryptoVerifierInterface;
-use PdfSigner\Infrastructure\Native\ValueObject\SignatureCryptoVerification;
+use SignerPHP\Domain\Exception\SignatureValidationException;
+use SignerPHP\Infrastructure\Native\Contract\ProcessRunnerInterface;
+use SignerPHP\Infrastructure\Native\Contract\SignatureCryptoVerifierInterface;
+use SignerPHP\Infrastructure\Native\ValueObject\SignatureCryptoVerification;
 
 final class OpenSslSignatureCryptoVerifier implements SignatureCryptoVerifierInterface
 {

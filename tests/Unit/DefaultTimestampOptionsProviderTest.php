@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Infrastructure\Native\Service\DefaultTimestampOptionsProvider;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\Native\Service\DefaultTimestampOptionsProvider;
 
 final class DefaultTimestampOptionsProviderTest extends TestCase
 {

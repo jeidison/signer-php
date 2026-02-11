@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\Native;
+namespace SignerPHP\Infrastructure\Native;
 
-use PdfSigner\Application\Contract\PdfSignatureValidationEngineInterface;
-use PdfSigner\Application\DTO\SignatureValidationEntryDto;
-use PdfSigner\Application\DTO\SignatureValidationResultDto;
-use PdfSigner\Application\DTO\ValidatePdfRequestDto;
-use PdfSigner\Domain\Exception\SignatureValidationException;
-use PdfSigner\Infrastructure\Native\Contract\BrazilPolicyListVerifierInterface;
-use PdfSigner\Infrastructure\Native\Contract\PdfSignatureExtractorInterface;
-use PdfSigner\Infrastructure\Native\Contract\SignatureCryptoVerifierInterface;
-use PdfSigner\Infrastructure\Native\Contract\SignatureTrustVerifierInterface;
-use PdfSigner\Infrastructure\Native\Service\OpenSslBrazilPolicyListVerifier;
-use PdfSigner\Infrastructure\Native\Service\OpenSslSignatureCryptoVerifier;
-use PdfSigner\Infrastructure\Native\Service\OpenSslSignatureTrustVerifier;
-use PdfSigner\Infrastructure\Native\Service\PdfSignatureExtractor;
+use SignerPHP\Application\Contract\PdfSignatureValidationEngineInterface;
+use SignerPHP\Application\DTO\SignatureValidationEntryDto;
+use SignerPHP\Application\DTO\SignatureValidationResultDto;
+use SignerPHP\Application\DTO\ValidatePdfRequestDto;
+use SignerPHP\Domain\Exception\SignatureValidationException;
+use SignerPHP\Infrastructure\Native\Contract\BrazilPolicyListVerifierInterface;
+use SignerPHP\Infrastructure\Native\Contract\PdfSignatureExtractorInterface;
+use SignerPHP\Infrastructure\Native\Contract\SignatureCryptoVerifierInterface;
+use SignerPHP\Infrastructure\Native\Contract\SignatureTrustVerifierInterface;
+use SignerPHP\Infrastructure\Native\Service\OpenSslBrazilPolicyListVerifier;
+use SignerPHP\Infrastructure\Native\Service\OpenSslSignatureCryptoVerifier;
+use SignerPHP\Infrastructure\Native\Service\OpenSslSignatureTrustVerifier;
+use SignerPHP\Infrastructure\Native\Service\PdfSignatureExtractor;
 
 final readonly class NativePdfSignatureValidationEngine implements PdfSignatureValidationEngineInterface
 {

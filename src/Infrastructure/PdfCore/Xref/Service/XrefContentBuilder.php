@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore\Xref\Service;
+namespace SignerPHP\Infrastructure\PdfCore\Xref\Service;
 
 final class XrefContentBuilder
 {

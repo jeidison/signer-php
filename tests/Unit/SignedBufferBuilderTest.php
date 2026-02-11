@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Application\DTO\CertificateCredentialsDto;
-use PdfSigner\Application\DTO\PdfContentDto;
-use PdfSigner\Application\DTO\SignatureProfile;
-use PdfSigner\Application\DTO\SigningContextDto;
-use PdfSigner\Application\DTO\SigningOptionsDto;
-use PdfSigner\Application\DTO\SignPdfRequestDto;
-use PdfSigner\Application\DTO\TimestampOptionsDto;
-use PdfSigner\Domain\ValueObject\VerifiedCertificate;
-use PdfSigner\Infrastructure\Native\Contract\DocumentTimestampApplierInterface;
-use PdfSigner\Infrastructure\Native\Contract\LongTermValidationApplierInterface;
-use PdfSigner\Infrastructure\Native\Contract\Pkcs7SignerInterface;
-use PdfSigner\Infrastructure\Native\Contract\XrefContentResolverInterface;
-use PdfSigner\Infrastructure\Native\Service\SignedBufferBuilder;
-use PdfSigner\Infrastructure\PdfCore\Buffer;
-use PdfSigner\Infrastructure\PdfCore\PdfDocument;
-use PdfSigner\Infrastructure\PdfCore\Signature;
-use PdfSigner\Infrastructure\PdfCore\SignatureObject;
+use SignerPHP\Application\DTO\CertificateCredentialsDto;
+use SignerPHP\Application\DTO\PdfContentDto;
+use SignerPHP\Application\DTO\SignatureProfile;
+use SignerPHP\Application\DTO\SigningContextDto;
+use SignerPHP\Application\DTO\SigningOptionsDto;
+use SignerPHP\Application\DTO\SignPdfRequestDto;
+use SignerPHP\Application\DTO\TimestampOptionsDto;
+use SignerPHP\Domain\ValueObject\VerifiedCertificate;
+use SignerPHP\Infrastructure\Native\Contract\DocumentTimestampApplierInterface;
+use SignerPHP\Infrastructure\Native\Contract\LongTermValidationApplierInterface;
+use SignerPHP\Infrastructure\Native\Contract\Pkcs7SignerInterface;
+use SignerPHP\Infrastructure\Native\Contract\XrefContentResolverInterface;
+use SignerPHP\Infrastructure\Native\Service\SignedBufferBuilder;
+use SignerPHP\Infrastructure\PdfCore\Buffer;
+use SignerPHP\Infrastructure\PdfCore\PdfDocument;
+use SignerPHP\Infrastructure\PdfCore\Signature;
+use SignerPHP\Infrastructure\PdfCore\SignatureObject;
 use PHPUnit\Framework\TestCase;
 
 final class SignedBufferBuilderTest extends TestCase

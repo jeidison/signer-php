@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
 use DateTime;
-use PdfSigner\Infrastructure\PdfCore\PDFObject;
-use PdfSigner\Infrastructure\PdfCore\Service\DocumentMetadataUpdater;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\PdfCore\PDFObject;
+use SignerPHP\Infrastructure\PdfCore\Service\DocumentMetadataUpdater;
 
 final class DocumentMetadataUpdaterTest extends TestCase
 {

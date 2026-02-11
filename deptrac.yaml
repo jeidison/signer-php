@@ -5,19 +5,19 @@ deptrac:
     - name: Presentation
       collectors:
         - type: classNameRegex
-          value: '#^PdfSigner\\\\Presentation\\\\#'
+          value: '#^SignerPHP\\\\Presentation\\\\#'
     - name: Application
       collectors:
         - type: classNameRegex
-          value: '#^PdfSigner\\\\Application\\\\#'
+          value: '#^SignerPHP\\\\Application\\\\#'
     - name: Domain
       collectors:
         - type: classNameRegex
-          value: '#^PdfSigner\\\\Domain\\\\#'
+          value: '#^SignerPHP\\\\Domain\\\\#'
     - name: Infrastructure
       collectors:
         - type: classNameRegex
-          value: '#^PdfSigner\\\\Infrastructure\\\\#'
+          value: '#^SignerPHP\\\\Infrastructure\\\\#'
   ruleset:
     Presentation:
       - Application

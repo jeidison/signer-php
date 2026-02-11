@@ -2,19 +2,19 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\Native\Service;
+namespace SignerPHP\Infrastructure\Native\Service;
 
-use PdfSigner\Infrastructure\Native\Contract\LongTermValidationApplierInterface;
-use PdfSigner\Infrastructure\Native\Contract\PdfSignatureExtractorInterface;
-use PdfSigner\Infrastructure\Native\Contract\SignatureCertificateCollectorInterface;
-use PdfSigner\Infrastructure\Native\Contract\SignatureRevocationEvidenceCollectorInterface;
-use PdfSigner\Infrastructure\Native\ValueObject\ExtractedPdfSignature;
-use PdfSigner\Infrastructure\PdfCore\Buffer;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueList;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueObject;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueReference;
-use PdfSigner\Infrastructure\PdfCore\Service\TrailerObjectResolver;
-use PdfSigner\Infrastructure\PdfCore\Xref\Xref;
+use SignerPHP\Infrastructure\Native\Contract\LongTermValidationApplierInterface;
+use SignerPHP\Infrastructure\Native\Contract\PdfSignatureExtractorInterface;
+use SignerPHP\Infrastructure\Native\Contract\SignatureCertificateCollectorInterface;
+use SignerPHP\Infrastructure\Native\Contract\SignatureRevocationEvidenceCollectorInterface;
+use SignerPHP\Infrastructure\Native\ValueObject\ExtractedPdfSignature;
+use SignerPHP\Infrastructure\PdfCore\Buffer;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueList;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueObject;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueReference;
+use SignerPHP\Infrastructure\PdfCore\Service\TrailerObjectResolver;
+use SignerPHP\Infrastructure\PdfCore\Xref\Xref;
 
 final readonly class DocumentLongTermValidationApplier implements LongTermValidationApplierInterface
 {

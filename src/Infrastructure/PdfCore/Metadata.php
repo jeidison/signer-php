@@ -1,6 +1,6 @@
 <?php
 
-namespace PdfSigner\Infrastructure\PdfCore;
+namespace SignerPHP\Infrastructure\PdfCore;
 
 /**
  * @author Jeidison Farias <jeidison.farias@gmail.com>

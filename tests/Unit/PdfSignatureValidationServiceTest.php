@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Application\Contract\PdfSignatureValidationEngineInterface;
-use PdfSigner\Application\DTO\PdfContentDto;
-use PdfSigner\Application\DTO\SignatureValidationResultDto;
-use PdfSigner\Application\DTO\ValidatePdfRequestDto;
-use PdfSigner\Application\Service\PdfSignatureValidationService;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Application\Contract\PdfSignatureValidationEngineInterface;
+use SignerPHP\Application\DTO\PdfContentDto;
+use SignerPHP\Application\DTO\SignatureValidationResultDto;
+use SignerPHP\Application\DTO\ValidatePdfRequestDto;
+use SignerPHP\Application\Service\PdfSignatureValidationService;
 
 final class PdfSignatureValidationServiceTest extends TestCase
 {

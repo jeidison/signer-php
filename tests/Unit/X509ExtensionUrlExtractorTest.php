@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Infrastructure\Native\Service\X509ExtensionUrlExtractor;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\Native\Service\X509ExtensionUrlExtractor;
 
 final class X509ExtensionUrlExtractorTest extends TestCase
 {

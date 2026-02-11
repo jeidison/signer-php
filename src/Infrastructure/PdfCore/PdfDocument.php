@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore;
+namespace SignerPHP\Infrastructure\PdfCore;
 
 use DateTime;
-use PdfSigner\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValue;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueString;
-use PdfSigner\Infrastructure\PdfCore\Service\DocumentMetadataUpdater;
-use PdfSigner\Infrastructure\PdfCore\Service\ObjectStreamResolver;
-use PdfSigner\Infrastructure\PdfCore\Service\PdfObjectReader;
-use PdfSigner\Infrastructure\PdfCore\Service\TrailerObjectResolver;
-use PdfSigner\Infrastructure\PdfCore\Utils\Date;
+use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValue;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueString;
+use SignerPHP\Infrastructure\PdfCore\Service\DocumentMetadataUpdater;
+use SignerPHP\Infrastructure\PdfCore\Service\ObjectStreamResolver;
+use SignerPHP\Infrastructure\PdfCore\Service\PdfObjectReader;
+use SignerPHP\Infrastructure\PdfCore\Service\TrailerObjectResolver;
+use SignerPHP\Infrastructure\PdfCore\Utils\Date;
 
 /**
  * @author Jeidison Farias <jeidison.farias@gmail.com>

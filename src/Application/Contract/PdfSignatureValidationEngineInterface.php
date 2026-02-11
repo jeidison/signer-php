@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Application\Contract;
+namespace SignerPHP\Application\Contract;
 
-use PdfSigner\Application\DTO\SignatureValidationResultDto;
-use PdfSigner\Application\DTO\ValidatePdfRequestDto;
+use SignerPHP\Application\DTO\SignatureValidationResultDto;
+use SignerPHP\Application\DTO\ValidatePdfRequestDto;
 
 interface PdfSignatureValidationEngineInterface
 {

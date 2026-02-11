@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore\Compat;
+namespace SignerPHP\Infrastructure\PdfCore\Compat;
 
 trait LegacyPdfValueCompat
 {

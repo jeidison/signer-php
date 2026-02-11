@@ -54,7 +54,7 @@ composer require jeidison/signer-php
 ```php
 <?php
 
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Presentation\PdfSigner;
 
 $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -82,9 +82,9 @@ $signedPdf = PdfSigner::signer()
 ```php
 <?php
 
-use PdfSigner\Application\DTO\SignatureActorDto;
-use PdfSigner\Application\DTO\SignatureMetadataDto;
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Application\DTO\SignatureActorDto;
+use SignerPHP\Application\DTO\SignatureMetadataDto;
+use SignerPHP\Presentation\PdfSigner;
 
 $metadata = new SignatureMetadataDto(
  reason: 'Contract approval',
@@ -107,8 +107,8 @@ $signedPdf = PdfSigner::signer()
 ```php
 <?php
 
-use PdfSigner\Application\DTO\SignatureAppearanceDto;
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Application\DTO\SignatureAppearanceDto;
+use SignerPHP\Presentation\PdfSigner;
 
 $appearance = new SignatureAppearanceDto(
  imagePath: '/tmp/signature.png',
@@ -128,8 +128,8 @@ $signedPdf = PdfSigner::signer()
 ```php
 <?php
 
-use PdfSigner\Application\DTO\SignatureAppearanceDto;
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Application\DTO\SignatureAppearanceDto;
+use SignerPHP\Presentation\PdfSigner;
 
 $base64Image = base64_encode(file_get_contents('/tmp/signature.png'));
 
@@ -151,7 +151,7 @@ $signedPdf = PdfSigner::signer()
 ```php
 <?php
 
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Presentation\PdfSigner;
 
 $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -167,7 +167,7 @@ Use a saída assinada como entrada da próxima assinatura:
 ```php
 <?php
 
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Presentation\PdfSigner;
 
 $step1 = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -190,7 +190,7 @@ Nesse caso, a lib usa um TSA público padrão (`https://freetsa.org/tsr`).
 ```php
 <?php
 
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Presentation\PdfSigner;
 
 $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -206,8 +206,8 @@ Se quiser customizar o TSA apenas nesse fluxo, use `withTimestamp(new TimestampO
 ```php
 <?php
 
-use PdfSigner\Application\DTO\TimestampOptionsDto;
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Application\DTO\TimestampOptionsDto;
+use SignerPHP\Presentation\PdfSigner;
 
 $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -228,7 +228,7 @@ $signedPdf = PdfSigner::signer()
 ```php
 <?php
 
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Presentation\PdfSigner;
 
 $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -242,7 +242,7 @@ $signedPdf = PdfSigner::signer()
 ```php
 <?php
 
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Presentation\PdfSigner;
 
 $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -256,7 +256,7 @@ $signedPdf = PdfSigner::signer()
 ```php
 <?php
 
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Presentation\PdfSigner;
 
 $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -272,7 +272,7 @@ No perfil `PAdES-T`, a assinatura exige timestamp ativo (ex.: `withTimestamp(...
 ```php
 <?php
 
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Presentation\PdfSigner;
 
 $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -288,7 +288,7 @@ No perfil `PAdES-LT`, além do timestamp, a lib aplica enriquecimento DSS com ce
 ```php
 <?php
 
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Presentation\PdfSigner;
 
 $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -304,8 +304,8 @@ No perfil `PAdES-LTA`, após o enriquecimento LT, a lib aplica um novo `Document
 ```php
 <?php
 
-use PdfSigner\Application\DTO\CertificationLevel;
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Application\DTO\CertificationLevel;
+use SignerPHP\Presentation\PdfSigner;
 
 $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -330,8 +330,8 @@ Padrão:
 ```php
 <?php
 
-use PdfSigner\Application\DTO\BrazilSignaturePolicyOptionsDto;
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Application\DTO\BrazilSignaturePolicyOptionsDto;
+use SignerPHP\Presentation\PdfSigner;
 
 $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -365,8 +365,8 @@ Exemplo com helper SERPRO:
 ```php
 <?php
 
-use PdfSigner\Application\DTO\BrazilSignaturePolicyOptionsDto;
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Application\DTO\BrazilSignaturePolicyOptionsDto;
+use SignerPHP\Presentation\PdfSigner;
 
 $signedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -385,8 +385,8 @@ $signedPdf = PdfSigner::signer()
 ```php
 <?php
 
-use PdfSigner\Application\DTO\ProtectionOptionsDto;
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Application\DTO\ProtectionOptionsDto;
+use SignerPHP\Presentation\PdfSigner;
 
 $protectedPdf = PdfSigner::protection()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -406,8 +406,8 @@ Use este fluxo quando você quer evitar erro de ordem e garantir que a assinatur
 ```php
 <?php
 
-use PdfSigner\Application\DTO\ProtectionOptionsDto;
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Application\DTO\ProtectionOptionsDto;
+use SignerPHP\Presentation\PdfSigner;
 
 $signedProtectedPdf = PdfSigner::signer()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -426,7 +426,7 @@ file_put_contents('/tmp/output-protected-signed.pdf', $signedProtectedPdf);
 ```php
 <?php
 
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Presentation\PdfSigner;
 
 $validation = PdfSigner::validation()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -446,7 +446,7 @@ if ($validation->allValid) {
 ```php
 <?php
 
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Presentation\PdfSigner;
 
 $validation = PdfSigner::validation()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -463,7 +463,7 @@ foreach ($validation->entries as $entry) {
 ```php
 <?php
 
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Presentation\PdfSigner;
 
 $validation = PdfSigner::validation()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))
@@ -496,9 +496,9 @@ Você pode sobrescrever essas URLs:
 ```php
 <?php
 
-use PdfSigner\Application\DTO\BrazilPolicyLpaUrlsDto;
-use PdfSigner\Application\DTO\BrazilTrustAnchorsOptionsDto;
-use PdfSigner\Presentation\PdfSigner;
+use SignerPHP\Application\DTO\BrazilPolicyLpaUrlsDto;
+use SignerPHP\Application\DTO\BrazilTrustAnchorsOptionsDto;
+use SignerPHP\Presentation\PdfSigner;
 
 $validation = PdfSigner::validation()
  ->withPdfContent(file_get_contents('/tmp/input.pdf'))

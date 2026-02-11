@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Infrastructure\PdfCore\PageDescriptor;
-use PdfSigner\Infrastructure\PdfCore\PageInfo;
-use PdfSigner\Infrastructure\PdfCore\PdfDocument;
-use PdfSigner\Infrastructure\PdfCore\PDFObject;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
-use PdfSigner\Infrastructure\PdfCore\SignatureAppearance;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\PdfCore\PageDescriptor;
+use SignerPHP\Infrastructure\PdfCore\PageInfo;
+use SignerPHP\Infrastructure\PdfCore\PdfDocument;
+use SignerPHP\Infrastructure\PdfCore\PDFObject;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
+use SignerPHP\Infrastructure\PdfCore\SignatureAppearance;
 
 final class SignatureAppearanceTest extends TestCase
 {

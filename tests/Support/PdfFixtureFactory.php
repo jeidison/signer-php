@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Support;
+namespace SignerPHP\Tests\Support;
 
 final class PdfFixtureFactory
 {

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
 use InvalidArgumentException;
-use PdfSigner\Infrastructure\PdfCore\Utils\Str;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\PdfCore\Utils\Str;
 
 final class StrTest extends TestCase
 {

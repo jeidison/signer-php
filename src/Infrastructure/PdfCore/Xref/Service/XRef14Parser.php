@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore\Xref\Service;
+namespace SignerPHP\Infrastructure\PdfCore\Xref\Service;
 
-use PdfSigner\Infrastructure\PdfCore\Exception\PdfCoreParsingException;
-use PdfSigner\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValue;
-use PdfSigner\Infrastructure\PdfCore\Trailer;
-use PdfSigner\Infrastructure\PdfCore\Xref\XrefParseResult;
+use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreParsingException;
+use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValue;
+use SignerPHP\Infrastructure\PdfCore\Trailer;
+use SignerPHP\Infrastructure\PdfCore\Xref\XrefParseResult;
 
 final class XRef14Parser
 {

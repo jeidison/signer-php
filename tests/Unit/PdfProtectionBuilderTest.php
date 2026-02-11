@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Application\Contract\PdfProtectionEngineInterface;
-use PdfSigner\Application\DTO\ProtectionOptionsDto;
-use PdfSigner\Application\DTO\ProtectPdfRequestDto;
-use PdfSigner\Application\Service\PdfProtectionService;
-use PdfSigner\Domain\Exception\PdfSignerException;
-use PdfSigner\Presentation\PdfProtectionBuilder;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Application\Contract\PdfProtectionEngineInterface;
+use SignerPHP\Application\DTO\ProtectionOptionsDto;
+use SignerPHP\Application\DTO\ProtectPdfRequestDto;
+use SignerPHP\Application\Service\PdfProtectionService;
+use SignerPHP\Domain\Exception\PdfSignerException;
+use SignerPHP\Presentation\PdfProtectionBuilder;
 
 final class PdfProtectionBuilderTest extends TestCase
 {

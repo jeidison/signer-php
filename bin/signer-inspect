@@ -3,10 +3,10 @@
 
 declare(strict_types=1);
 
-use PdfSigner\Presentation\PdfSigner;
-use PdfSigner\Infrastructure\Native\Service\OpenSslCmsCertificateCollector;
-use PdfSigner\Infrastructure\Native\Service\PdfSignatureExtractor;
-use PdfSigner\Infrastructure\Native\Service\X509ExtensionUrlExtractor;
+use SignerPHP\Presentation\PdfSigner;
+use SignerPHP\Infrastructure\Native\Service\OpenSslCmsCertificateCollector;
+use SignerPHP\Infrastructure\Native\Service\PdfSignatureExtractor;
+use SignerPHP\Infrastructure\Native\Service\X509ExtensionUrlExtractor;
 
 require __DIR__.'/../vendor/autoload.php';
 

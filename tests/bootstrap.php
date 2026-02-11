@@ -18,8 +18,8 @@ foreach ($autoloadCandidates as $autoload) {
 
 spl_autoload_register(static function (string $class): void {
     $prefixes = [
-        'PdfSigner\\' => __DIR__.'/../src/',
-        'Jeidison\\PdfSigner\\' => __DIR__.'/../../src/',
+        'SignerPHP\\' => __DIR__.'/../src/',
+        'Jeidison\\SignerPHP\\' => __DIR__.'/../../src/',
     ];
 
     foreach ($prefixes as $prefix => $baseDir) {

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore;
+namespace SignerPHP\Infrastructure\PdfCore;
 
-use PdfSigner\Application\DTO\CertificationLevel;
-use PdfSigner\Infrastructure\PdfCore\Contract\SignatureRuntimeInterface;
-use PdfSigner\Infrastructure\PdfCore\Exception\PdfCoreSigningException;
-use PdfSigner\Infrastructure\PdfCore\Service\NativeSignatureRuntime;
-use PdfSigner\Infrastructure\PdfCore\Service\SignatureObjectAssembler;
+use SignerPHP\Application\DTO\CertificationLevel;
+use SignerPHP\Infrastructure\PdfCore\Contract\SignatureRuntimeInterface;
+use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreSigningException;
+use SignerPHP\Infrastructure\PdfCore\Service\NativeSignatureRuntime;
+use SignerPHP\Infrastructure\PdfCore\Service\SignatureObjectAssembler;
 
 class Signature
 {

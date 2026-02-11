@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore;
+namespace SignerPHP\Infrastructure\PdfCore;
 
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValue;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValue;
 
 final readonly class ParsedDocumentStructure
 {

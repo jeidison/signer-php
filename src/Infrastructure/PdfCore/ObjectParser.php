@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore;
+namespace SignerPHP\Infrastructure\PdfCore;
 
-use PdfSigner\Infrastructure\PdfCore\Exception\PdfCoreParsingException;
-use PdfSigner\Infrastructure\PdfCore\Parsing\ObjectLexer;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValue;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueHexString;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueList;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueObject;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueString;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueType;
+use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreParsingException;
+use SignerPHP\Infrastructure\PdfCore\Parsing\ObjectLexer;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValue;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueHexString;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueList;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueObject;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueString;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueType;
 use Stringable;
 
 class ObjectParser implements Stringable

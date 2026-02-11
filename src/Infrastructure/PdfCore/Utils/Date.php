@@ -1,6 +1,6 @@
 <?php
 
-namespace PdfSigner\Infrastructure\PdfCore\Utils;
+namespace SignerPHP\Infrastructure\PdfCore\Utils;
 
 use DateTime;
 

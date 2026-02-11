@@ -1,10 +1,10 @@
 <?php
 
-namespace PdfSigner\Infrastructure\PdfCore;
+namespace SignerPHP\Infrastructure\PdfCore;
 
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueString;
-use PdfSigner\Infrastructure\PdfCore\Utils\Date;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueString;
+use SignerPHP\Infrastructure\PdfCore\Utils\Date;
 
 class SignatureObject extends PDFObject
 {

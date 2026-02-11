@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore\Utils;
+namespace SignerPHP\Infrastructure\PdfCore\Utils;
 
 use Exception;
-use PdfSigner\Infrastructure\PdfCore\StreamReader;
+use SignerPHP\Infrastructure\PdfCore\StreamReader;
 
 final class BinaryStreamReader
 {

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Infrastructure\PdfCore\ObjectParser;
-use PdfSigner\Infrastructure\PdfCore\Parsing\ObjectLexer;
-use PdfSigner\Infrastructure\PdfCore\StreamReader;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\PdfCore\ObjectParser;
+use SignerPHP\Infrastructure\PdfCore\Parsing\ObjectLexer;
+use SignerPHP\Infrastructure\PdfCore\StreamReader;
 
 final class ObjectLexerTest extends TestCase
 {

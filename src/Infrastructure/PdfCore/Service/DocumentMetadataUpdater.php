@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore\Service;
+namespace SignerPHP\Infrastructure\PdfCore\Service;
 
 use DateTime;
-use PdfSigner\Infrastructure\PdfCore\PDFObject;
+use SignerPHP\Infrastructure\PdfCore\PDFObject;
 
 final class DocumentMetadataUpdater
 {

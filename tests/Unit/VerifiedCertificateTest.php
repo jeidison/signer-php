@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Application\DTO\CertificateCredentialsDto;
-use PdfSigner\Domain\ValueObject\VerifiedCertificate;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Application\DTO\CertificateCredentialsDto;
+use SignerPHP\Domain\ValueObject\VerifiedCertificate;
 
 final class VerifiedCertificateTest extends TestCase
 {

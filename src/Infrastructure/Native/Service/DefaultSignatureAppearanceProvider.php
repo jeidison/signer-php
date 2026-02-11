@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\Native\Service;
+namespace SignerPHP\Infrastructure\Native\Service;
 
-use PdfSigner\Application\DTO\SignatureAppearanceDto;
-use PdfSigner\Infrastructure\Native\Contract\DefaultSignatureAppearanceProviderInterface;
+use SignerPHP\Application\DTO\SignatureAppearanceDto;
+use SignerPHP\Infrastructure\Native\Contract\DefaultSignatureAppearanceProviderInterface;
 
 final class DefaultSignatureAppearanceProvider implements DefaultSignatureAppearanceProviderInterface
 {

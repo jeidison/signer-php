@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
 use Exception;
-use PdfSigner\Infrastructure\PdfCore\StreamReader;
-use PdfSigner\Infrastructure\PdfCore\Utils\BinaryStreamReader;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\PdfCore\StreamReader;
+use SignerPHP\Infrastructure\PdfCore\Utils\BinaryStreamReader;
 
 final class BinaryStreamReaderTest extends TestCase
 {

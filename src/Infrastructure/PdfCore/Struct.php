@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore;
+namespace SignerPHP\Infrastructure\PdfCore;
 
 use Exception;
-use PdfSigner\Infrastructure\PdfCore\Xref\CrossReferenceManager;
+use SignerPHP\Infrastructure\PdfCore\Xref\CrossReferenceManager;
 
 /**
  * @author Jeidison Farias <jeidison.farias@gmail.com>
@@ -31,7 +31,7 @@ class Struct
     }
 
     /**
-     * @return array{trailer:\PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValue|null,version:string,xref:array<int, int|array{stmoid:int,pos:int}|null>,xrefposition:int,xrefversion:string,revisions:array<int,int>}
+     * @return array{trailer:\SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValue|null,version:string,xref:array<int, int|array{stmoid:int,pos:int}|null>,xrefposition:int,xrefversion:string,revisions:array<int,int>}
      */
     public function structure(): array
     {

@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
 use Exception;
-use PdfSigner\Infrastructure\PdfCore\ObjectParser;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueHexString;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueList;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueObject;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueString;
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueType;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\PdfCore\ObjectParser;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueHexString;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueList;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueObject;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueString;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueType;
 
 final class ObjectParserTest extends TestCase
 {

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Presentation;
+namespace SignerPHP\Presentation;
 
-use PdfSigner\Application\Service\PdfProtectionService;
-use PdfSigner\Application\Service\PdfSignatureValidationService;
-use PdfSigner\Application\Service\PdfSigningService;
-use PdfSigner\Infrastructure\Legacy\OpenSslCertificateValidator;
-use PdfSigner\Infrastructure\Native\NativePdfProtectionEngine;
-use PdfSigner\Infrastructure\Native\NativePdfSignatureValidationEngine;
-use PdfSigner\Infrastructure\Native\NativePdfSigningEngine;
+use SignerPHP\Application\Service\PdfProtectionService;
+use SignerPHP\Application\Service\PdfSignatureValidationService;
+use SignerPHP\Application\Service\PdfSigningService;
+use SignerPHP\Infrastructure\Legacy\OpenSslCertificateValidator;
+use SignerPHP\Infrastructure\Native\NativePdfProtectionEngine;
+use SignerPHP\Infrastructure\Native\NativePdfSignatureValidationEngine;
+use SignerPHP\Infrastructure\Native\NativePdfSigningEngine;
 
 final class PdfSigner
 {

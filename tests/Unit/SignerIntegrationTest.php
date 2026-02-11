@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Infrastructure\PdfCore\Metadata;
-use PdfSigner\Infrastructure\PdfCore\Signer;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\PdfCore\Metadata;
+use SignerPHP\Infrastructure\PdfCore\Signer;
 
 final class SignerIntegrationTest extends TestCase
 {

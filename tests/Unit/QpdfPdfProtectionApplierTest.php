@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Application\DTO\ProtectionOptionsDto;
-use PdfSigner\Domain\Exception\ProtectionProcessException;
-use PdfSigner\Infrastructure\Native\Contract\CommandExecutorInterface;
-use PdfSigner\Infrastructure\Native\Service\NativeFunctionOverrideState;
-use PdfSigner\Infrastructure\Native\Service\QpdfPdfProtectionApplier;
+use SignerPHP\Application\DTO\ProtectionOptionsDto;
+use SignerPHP\Domain\Exception\ProtectionProcessException;
+use SignerPHP\Infrastructure\Native\Contract\CommandExecutorInterface;
+use SignerPHP\Infrastructure\Native\Service\NativeFunctionOverrideState;
+use SignerPHP\Infrastructure\Native\Service\QpdfPdfProtectionApplier;
 use PHPUnit\Framework\TestCase;
 
 final class QpdfPdfProtectionApplierTest extends TestCase

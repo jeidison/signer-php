@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Application\DTO;
+namespace SignerPHP\Application\DTO;
 
 final readonly class SignPdfRequestDto
 {

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\Native\Service;
+namespace SignerPHP\Infrastructure\Native\Service;
 
-use PdfSigner\Application\Contract\DefaultTimestampOptionsProviderInterface;
-use PdfSigner\Application\DTO\TimestampOptionsDto;
+use SignerPHP\Application\Contract\DefaultTimestampOptionsProviderInterface;
+use SignerPHP\Application\DTO\TimestampOptionsDto;
 
 final class DefaultTimestampOptionsProvider implements DefaultTimestampOptionsProviderInterface
 {

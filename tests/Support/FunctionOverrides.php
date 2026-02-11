@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\Native\Service;
+namespace SignerPHP\Infrastructure\Native\Service;
 
 final class NativeFunctionOverrideState
 {
@@ -49,7 +49,7 @@ function is_file(string $filename): bool
     return \is_file($filename);
 }
 
-namespace PdfSigner\Infrastructure\Legacy;
+namespace SignerPHP\Infrastructure\Legacy;
 
 final class LegacyFunctionOverrideState
 {

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Tests\Unit;
+namespace SignerPHP\Tests\Unit;
 
-use PdfSigner\Infrastructure\PdfCore\PdfValue\PDFValueObject;
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueObject;
 
 final class PdfValueConvertTest extends TestCase
 {

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Application\Contract;
+namespace SignerPHP\Application\Contract;
 
-use PdfSigner\Application\DTO\SigningContextDto;
+use SignerPHP\Application\DTO\SigningContextDto;
 
 interface PdfSigningEngineInterface
 {

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace PdfSigner\Infrastructure\PdfCore\Xref;
+namespace SignerPHP\Infrastructure\PdfCore\Xref;
 
-use PdfSigner\Infrastructure\PdfCore\Buffer;
-use PdfSigner\Infrastructure\PdfCore\PdfDocument;
-use PdfSigner\Infrastructure\PdfCore\Xref\Service\XrefContentBuilder;
+use SignerPHP\Infrastructure\PdfCore\Buffer;
+use SignerPHP\Infrastructure\PdfCore\PdfDocument;
+use SignerPHP\Infrastructure\PdfCore\Xref\Service\XrefContentBuilder;
 
 /**
  * @author Jeidison Farias <jeidison.farias@gmail.com>
