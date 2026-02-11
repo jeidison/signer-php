@@ -1,0 +1,22 @@
+{
+  "$schema": "https://infection.github.io/schema.json",
+  "source": {
+    "directories": [
+      "src"
+    ]
+  },
+  "timeout": 20,
+  "tmpDir": "build/infection",
+  "logs": {
+    "summary": "build/infection/summary.log",
+    "text": "build/infection/infection.log"
+  },
+  "mutators": {
+    "@default": true
+  },
+  "testFramework": "phpunit",
+  "phpUnit": {
+    "configDir": ".",
+    "customPath": "vendor/bin/pest"
+  }
+}

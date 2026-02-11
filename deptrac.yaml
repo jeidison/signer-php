@@ -1,0 +1,31 @@
+deptrac:
+  paths:
+    - ./src
+  layers:
+    - name: Presentation
+      collectors:
+        - type: classNameRegex
+          value: '#^PdfSigner\\\\Presentation\\\\#'
+    - name: Application
+      collectors:
+        - type: classNameRegex
+          value: '#^PdfSigner\\\\Application\\\\#'
+    - name: Domain
+      collectors:
+        - type: classNameRegex
+          value: '#^PdfSigner\\\\Domain\\\\#'
+    - name: Infrastructure
+      collectors:
+        - type: classNameRegex
+          value: '#^PdfSigner\\\\Infrastructure\\\\#'
+  ruleset:
+    Presentation:
+      - Application
+      - Domain
+      - Infrastructure
+    Application:
+      - Domain
+    Domain: []
+    Infrastructure:
+      - Application
+      - Domain

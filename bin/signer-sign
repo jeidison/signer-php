@@ -1,0 +1,255 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use PdfSigner\Application\DTO\SignatureActorDto;
+use PdfSigner\Application\DTO\BrazilSignaturePolicyOptionsDto;
+use PdfSigner\Application\DTO\SignatureMetadataDto;
+use PdfSigner\Application\DTO\TimestampOptionsDto;
+use PdfSigner\Presentation\PdfSigner;
+
+require __DIR__.'/../vendor/autoload.php';
+
+/**
+ * @return array<string, string|bool>
+ */
+function parseOptions(array $argv): array
+{
+    $options = getopt('', [
+        'input:',
+        'output:',
+        'cert:',
+        'password:',
+        'pades-baseline-b',
+        'pades-baseline-t',
+        'pades-baseline-lt',
+        'pades-baseline-lta',
+        'certification-level::',
+        'policy::',
+        'policy-tsa-url::',
+        'policy-serpro-consumer-key::',
+        'policy-serpro-consumer-secret::',
+        'policy-serpro-token-url::',
+        'policy-serpro-stamp-url::',
+        'policy-timestamp-hash::',
+        'policy-timestamp-timeout::',
+        'no-default-appearance',
+        'no-default-timestamp',
+        'timestamp-url:',
+        'timestamp-hash::',
+        'timestamp-timeout::',
+        'name::',
+        'contact::',
+        'reason::',
+        'location::',
+        'help',
+    ]);
+
+    if (! is_array($options)) {
+        return [];
+    }
+
+    return $options;
+}
+
+function printUsage(): void
+{
+    fwrite(STDOUT, <<<TXT
+Signer PHP CLI
+
+Usage:
+  php bin/signer-sign --input=/path/in.pdf --output=/path/out.pdf --cert=/path/cert.pfx --password=secret [options]
+
+Options:
+  --pades-baseline-b         Enable PAdES Baseline-B profile
+  --pades-baseline-t         Enable PAdES Baseline-T profile (requires timestamp)
+  --pades-baseline-lt        Enable PAdES Baseline-LT profile (requires timestamp)
+  --pades-baseline-lta       Enable PAdES Baseline-LTA profile (requires timestamp)
+  --certification-level=2    DocMDP certification level (1, 2 or 3)
+  --policy=br-iti            Apply Brazil ITI signing policy preset (forces PAdES-LTA + DocMDP=2)
+  --policy-tsa-url=URL       TSA URL used with --policy=br-iti (optional)
+  --policy-serpro-consumer-key=KEY     SERPRO Consumer Key for OAuth2
+  --policy-serpro-consumer-secret=SECRET SERPRO Consumer Secret for OAuth2
+  --policy-serpro-token-url=URL        SERPRO token endpoint (optional)
+  --policy-serpro-stamp-url=URL        SERPRO stamp endpoint (optional)
+  --policy-timestamp-hash    Hash for policy timestamp (default: sha256)
+  --policy-timestamp-timeout Timeout in seconds for policy timestamp (default: 20)
+  --no-default-appearance    Disable built-in visible appearance fallback
+  --no-default-timestamp     Disable built-in default timestamp fallback
+  --timestamp-url=URL        Explicit TSA URL for this signature
+  --timestamp-hash=sha256    Hash algorithm for explicit timestamp (default: sha256)
+  --timestamp-timeout=15     Timeout in seconds for explicit timestamp (default: 15)
+  --name=TEXT                Signature actor name metadata
+  --contact=TEXT             Signature actor contact metadata
+  --reason=TEXT              Signature reason metadata
+  --location=TEXT            Signature location metadata
+  --help                     Show this help
+
+TXT);
+}
+
+function fail(string $message, int $code = 1): never
+{
+    fwrite(STDERR, $message.PHP_EOL);
+    exit($code);
+}
+
+$options = parseOptions($argv);
+if (isset($options['help'])) {
+    printUsage();
+    exit(0);
+}
+
+foreach (['input', 'output', 'cert', 'password'] as $required) {
+    if (! isset($options[$required]) || ! is_string($options[$required]) || trim($options[$required]) === '') {
+        printUsage();
+        fail('Missing required option: --'.$required, 2);
+    }
+}
+
+$inputPath = (string) $options['input'];
+$outputPath = (string) $options['output'];
+$certificatePath = (string) $options['cert'];
+$certificatePassword = (string) $options['password'];
+
+if (! is_file($inputPath)) {
+    fail('Input PDF does not exist: '.$inputPath, 2);
+}
+
+if (! is_file($certificatePath)) {
+    fail('Certificate file does not exist: '.$certificatePath, 2);
+}
+
+$pdfContent = file_get_contents($inputPath);
+if ($pdfContent === false) {
+    fail('Could not read input PDF: '.$inputPath, 2);
+}
+
+try {
+    $builder = PdfSigner::signer()
+        ->withPdfContent($pdfContent)
+        ->withCertificatePath($certificatePath, $certificatePassword);
+
+    if (isset($options['pades-baseline-b'])) {
+        $builder->withPadesBaselineB();
+    }
+
+    if (isset($options['pades-baseline-t'])) {
+        $builder->withPadesBaselineT();
+    }
+
+    if (isset($options['pades-baseline-lt'])) {
+        $builder->withPadesBaselineLT();
+    }
+
+    if (isset($options['pades-baseline-lta'])) {
+        $builder->withPadesBaselineLTA();
+    }
+
+    if (isset($options['certification-level']) && is_string($options['certification-level']) && $options['certification-level'] !== '') {
+        $builder->withCertificationLevel((int) $options['certification-level']);
+    }
+
+    if (isset($options['policy']) && is_string($options['policy']) && $options['policy'] !== '') {
+        if ($options['policy'] !== 'br-iti') {
+            fail('Unsupported policy. Supported values: br-iti', 2);
+        }
+
+        $policyTsaUrl = (isset($options['policy-tsa-url']) && is_string($options['policy-tsa-url']) && $options['policy-tsa-url'] !== '')
+            ? $options['policy-tsa-url']
+            : null;
+        $serproConsumerKey = (isset($options['policy-serpro-consumer-key']) && is_string($options['policy-serpro-consumer-key']) && $options['policy-serpro-consumer-key'] !== '')
+            ? $options['policy-serpro-consumer-key']
+            : null;
+        $serproConsumerSecret = (isset($options['policy-serpro-consumer-secret']) && is_string($options['policy-serpro-consumer-secret']) && $options['policy-serpro-consumer-secret'] !== '')
+            ? $options['policy-serpro-consumer-secret']
+            : null;
+        $serproTokenUrl = (isset($options['policy-serpro-token-url']) && is_string($options['policy-serpro-token-url']) && $options['policy-serpro-token-url'] !== '')
+            ? $options['policy-serpro-token-url']
+            : BrazilSignaturePolicyOptionsDto::SERPRO_TOKEN_URL;
+        $serproStampUrl = (isset($options['policy-serpro-stamp-url']) && is_string($options['policy-serpro-stamp-url']) && $options['policy-serpro-stamp-url'] !== '')
+            ? $options['policy-serpro-stamp-url']
+            : BrazilSignaturePolicyOptionsDto::SERPRO_STAMP_URL;
+
+        $policyHash = (isset($options['policy-timestamp-hash']) && is_string($options['policy-timestamp-hash']) && $options['policy-timestamp-hash'] !== '')
+            ? $options['policy-timestamp-hash']
+            : 'sha256';
+        $policyTimeout = (isset($options['policy-timestamp-timeout']) && is_string($options['policy-timestamp-timeout']) && $options['policy-timestamp-timeout'] !== '')
+            ? (int) $options['policy-timestamp-timeout']
+            : 20;
+
+        if (($serproConsumerKey !== null) xor ($serproConsumerSecret !== null)) {
+            fail('When using SERPRO auth you must provide both --policy-serpro-consumer-key and --policy-serpro-consumer-secret', 2);
+        }
+
+        if ($serproConsumerKey !== null && $serproConsumerSecret !== null) {
+            $builder->withBrazilPolicy(new BrazilSignaturePolicyOptionsDto(
+                tsaUrl: $policyTsaUrl ?? $serproStampUrl,
+                hashAlgorithm: $policyHash,
+                timeoutSeconds: $policyTimeout,
+                certReq: true,
+                serproConsumerKey: $serproConsumerKey,
+                serproConsumerSecret: $serproConsumerSecret,
+                serproTokenUrl: $serproTokenUrl,
+            ));
+        } else {
+            if ($policyTsaUrl === null) {
+                fail('When using --policy=br-iti without SERPRO credentials you must provide --policy-tsa-url', 2);
+            }
+
+            $builder->withBrazilPolicy(new BrazilSignaturePolicyOptionsDto(
+                tsaUrl: $policyTsaUrl,
+                hashAlgorithm: $policyHash,
+                timeoutSeconds: $policyTimeout,
+                certReq: true,
+            ));
+        }
+    }
+
+    if (isset($options['no-default-appearance'])) {
+        $builder->withoutDefaultAppearance();
+    }
+
+    if (isset($options['no-default-timestamp'])) {
+        $builder->withoutTimestamp();
+    }
+
+    if (isset($options['timestamp-url']) && is_string($options['timestamp-url'])) {
+        $hash = (isset($options['timestamp-hash']) && is_string($options['timestamp-hash']) && $options['timestamp-hash'] !== '')
+            ? $options['timestamp-hash']
+            : 'sha256';
+        $timeout = (isset($options['timestamp-timeout']) && is_string($options['timestamp-timeout']) && $options['timestamp-timeout'] !== '')
+            ? (int) $options['timestamp-timeout']
+            : 15;
+
+        $builder->withTimestamp(new TimestampOptionsDto(
+            tsaUrl: $options['timestamp-url'],
+            hashAlgorithm: $hash,
+            timeoutSeconds: $timeout,
+        ));
+    }
+
+    $hasMetadata = isset($options['name']) || isset($options['contact']) || isset($options['reason']) || isset($options['location']);
+    if ($hasMetadata) {
+        $name = (isset($options['name']) && is_string($options['name']) && $options['name'] !== '') ? $options['name'] : null;
+        $contact = (isset($options['contact']) && is_string($options['contact']) && $options['contact'] !== '') ? $options['contact'] : null;
+        $reason = (isset($options['reason']) && is_string($options['reason']) && $options['reason'] !== '') ? $options['reason'] : null;
+        $location = (isset($options['location']) && is_string($options['location']) && $options['location'] !== '') ? $options['location'] : null;
+
+        $builder->withMetadata(new SignatureMetadataDto(
+            reason: $reason,
+            location: $location,
+            actor: ($name !== null || $contact !== null) ? new SignatureActorDto(name: $name, contactInfo: $contact) : null,
+        ));
+    }
+
+    $signed = $builder->sign();
+    if (file_put_contents($outputPath, $signed) === false) {
+        fail('Could not write output PDF: '.$outputPath, 2);
+    }
+} catch (Throwable $throwable) {
+    fail('Signing failed: '.$throwable->getMessage(), 1);
+}
+
+fwrite(STDOUT, 'Signed PDF generated at: '.$outputPath.PHP_EOL);

@@ -1,0 +1,341 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use PdfSigner\Presentation\PdfSigner;
+use PdfSigner\Infrastructure\Native\Service\OpenSslCmsCertificateCollector;
+use PdfSigner\Infrastructure\Native\Service\PdfSignatureExtractor;
+use PdfSigner\Infrastructure\Native\Service\X509ExtensionUrlExtractor;
+
+require __DIR__.'/../vendor/autoload.php';
+
+/**
+ * @return array<string, string|bool>
+ */
+function parseOptions(): array
+{
+    $options = getopt('', [
+        'input:',
+        'json',
+        'help',
+    ]);
+
+    return is_array($options) ? $options : [];
+}
+
+function printUsage(): void
+{
+    fwrite(STDOUT, <<<TXT
+Signer PHP Inspect CLI
+
+Usage:
+  php bin/signer-inspect --input=/path/file.pdf [--json]
+
+Options:
+  --input=PATH   PDF file to inspect
+  --json         Print JSON output
+  --help         Show this help
+
+TXT);
+}
+
+function fail(string $message, int $code = 1): never
+{
+    fwrite(STDERR, $message.PHP_EOL);
+    exit($code);
+}
+
+function hasPattern(string $content, string $pattern): bool
+{
+    return preg_match($pattern, $content) === 1;
+}
+
+function inferProfile(bool $hasSignatures, bool $hasCades, int $docTimestampCount, bool $hasDss): string
+{
+    if (! $hasSignatures) {
+        return 'none';
+    }
+
+    if (! $hasCades) {
+        return 'pdf-basic';
+    }
+
+    if ($hasDss) {
+        return $docTimestampCount >= 2 ? 'pades-baseline-lta' : 'pades-baseline-lt';
+    }
+
+    if ($docTimestampCount >= 1) {
+        return 'pades-baseline-t';
+    }
+
+    return 'pades-baseline-b';
+}
+
+function isUrlReachable(string $url, int $timeoutSeconds = 4): bool
+{
+    if (! function_exists('curl_init')) {
+        return false;
+    }
+
+    $ch = curl_init($url);
+    if ($ch === false) {
+        return false;
+    }
+
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => max(1, $timeoutSeconds),
+        CURLOPT_CONNECTTIMEOUT => max(1, $timeoutSeconds),
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_SSL_VERIFYPEER => true,
+        CURLOPT_SSL_VERIFYHOST => 2,
+        CURLOPT_IPRESOLVE => CURL_IPRESOLVE_V4,
+        CURLOPT_NOBODY => true,
+        CURLOPT_HEADER => false,
+    ]);
+
+    curl_exec($ch);
+    $errno = curl_errno($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+
+    // Some endpoints reject HEAD. Retry with GET.
+    if ($errno === 0 && ($status === 405 || $status === 400 || $status === 403)) {
+        curl_setopt_array($ch, [
+            CURLOPT_NOBODY => false,
+            CURLOPT_HTTPGET => true,
+            CURLOPT_RANGE => '0-0',
+        ]);
+        curl_exec($ch);
+        $errno = curl_errno($ch);
+        $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    }
+
+    curl_close($ch);
+
+    return $errno === 0 && $status >= 200 && $status < 500;
+}
+
+$options = parseOptions();
+if (isset($options['help'])) {
+    printUsage();
+    exit(0);
+}
+
+if (! isset($options['input']) || ! is_string($options['input']) || trim($options['input']) === '') {
+    printUsage();
+    fail('Missing required option: --input', 2);
+}
+
+$inputPath = (string) $options['input'];
+if (! is_file($inputPath)) {
+    fail('Input PDF does not exist: '.$inputPath, 2);
+}
+
+$pdfContent = file_get_contents($inputPath);
+if ($pdfContent === false) {
+    fail('Could not read input PDF: '.$inputPath, 2);
+}
+
+try {
+    $validation = PdfSigner::validation()
+        ->withPdfContent($pdfContent)
+        ->validate();
+} catch (Throwable $throwable) {
+    fail('Could not validate signatures while inspecting. '.$throwable->getMessage(), 1);
+}
+
+$hasDss = hasPattern($pdfContent, '/\/DSS\b/');
+$hasVri = hasPattern($pdfContent, '/\/VRI\b/');
+$hasOcsps = hasPattern($pdfContent, '/\/OCSPs\b/');
+$hasCrls = hasPattern($pdfContent, '/\/CRLs\b/');
+$hasDocMdp = hasPattern($pdfContent, '/\/DocMDP\b/');
+$hasPerms = hasPattern($pdfContent, '/\/Perms\b/');
+$hasRfc3161 = hasPattern($pdfContent, '/\/SubFilter\s*\/ETSI\.RFC3161\b/');
+$hasCades = hasPattern($pdfContent, '/\/SubFilter\s*\/ETSI\.CAdES\.detached\b/');
+$docTimestampTypeCount = preg_match_all('/\/Type\s*\/DocTimeStamp\b/', $pdfContent, $unused);
+$docTimestampSubFilterCount = preg_match_all('/\/SubFilter\s*\/ETSI\.RFC3161\b/', $pdfContent, $unused2);
+$docTimestampCount = max((int) $docTimestampTypeCount, (int) $docTimestampSubFilterCount);
+
+$signatureExtractor = new PdfSignatureExtractor();
+$certificateCollector = new OpenSslCmsCertificateCollector();
+$urlExtractor = new X509ExtensionUrlExtractor();
+$signatureDetails = [];
+$revocationSummary = [
+    'certificates_analyzed' => 0,
+    'ocsp_missing_count' => 0,
+    'crl_missing_count' => 0,
+    'ocsp_unreachable_urls' => [],
+    'crl_unreachable_urls' => [],
+];
+
+foreach ($signatureExtractor->extract($pdfContent) as $signature) {
+    $certificates = $certificateCollector->collectDerCertificates($signature->signatureHex);
+    $certDetails = [];
+
+    foreach ($certificates as $certIndex => $certDer) {
+        $pem = "-----BEGIN CERTIFICATE-----\n".chunk_split(base64_encode($certDer), 64, "\n")."-----END CERTIFICATE-----\n";
+        $parsed = @openssl_x509_parse($pem, false);
+        if (! is_array($parsed)) {
+            $certDetails[] = [
+                'cert_index' => $certIndex,
+                'subject' => null,
+                'has_ocsp' => false,
+                'has_crl' => false,
+                'ocsp_urls' => [],
+                'crl_urls' => [],
+            ];
+            continue;
+        }
+
+        $ocspUrls = $urlExtractor->ocspUrls($parsed);
+        $crlUrls = $urlExtractor->crlUrls($parsed);
+
+        $subjectCn = null;
+        if (isset($parsed['subject']) && is_array($parsed['subject'])) {
+            $subjectCn = $parsed['subject']['CN'] ?? null;
+            if (! is_string($subjectCn)) {
+                $subjectCn = null;
+            }
+        }
+
+        $certDetails[] = [
+            'cert_index' => $certIndex,
+            'subject' => $subjectCn,
+            'has_ocsp' => $ocspUrls !== [],
+            'has_crl' => $crlUrls !== [],
+            'ocsp_urls' => $ocspUrls,
+            'crl_urls' => $crlUrls,
+        ];
+
+        $revocationSummary['certificates_analyzed']++;
+        if ($ocspUrls === []) {
+            $revocationSummary['ocsp_missing_count']++;
+        } else {
+            foreach ($ocspUrls as $url) {
+                if (! isUrlReachable($url)) {
+                    $revocationSummary['ocsp_unreachable_urls'][$url] = true;
+                }
+            }
+        }
+
+        if ($crlUrls === []) {
+            $revocationSummary['crl_missing_count']++;
+        } else {
+            foreach ($crlUrls as $url) {
+                if (! isUrlReachable($url)) {
+                    $revocationSummary['crl_unreachable_urls'][$url] = true;
+                }
+            }
+        }
+    }
+
+    $signatureDetails[] = [
+        'signature_index' => $signature->index,
+        'certificates_count' => count($certificates),
+        'certificates' => $certDetails,
+    ];
+}
+
+$revocationSummary['ocsp_unreachable_urls'] = array_values(array_keys($revocationSummary['ocsp_unreachable_urls']));
+$revocationSummary['crl_unreachable_urls'] = array_values(array_keys($revocationSummary['crl_unreachable_urls']));
+$revocationSummary['risk_flags'] = [
+    'ocsp_missing' => $revocationSummary['ocsp_missing_count'] > 0,
+    'crl_missing' => $revocationSummary['crl_missing_count'] > 0,
+    'ocsp_unreachable' => $revocationSummary['ocsp_unreachable_urls'] !== [],
+    'crl_unreachable' => $revocationSummary['crl_unreachable_urls'] !== [],
+];
+
+$report = [
+    'file' => $inputPath,
+    'size_bytes' => strlen($pdfContent),
+    'signatures' => [
+        'has_signatures' => $validation->hasSignatures,
+        'count' => count($validation->entries),
+        'all_valid' => $validation->allValid,
+    ],
+    'features' => [
+        'has_cades_subfilter' => $hasCades,
+        'has_rfc3161_subfilter' => $hasRfc3161,
+        'doc_timestamp_type_count' => $docTimestampTypeCount,
+        'doc_timestamp_subfilter_count' => $docTimestampSubFilterCount,
+        'doc_timestamp_count' => $docTimestampCount,
+        'has_perms' => $hasPerms,
+        'has_docmdp' => $hasDocMdp,
+        'has_dss' => $hasDss,
+        'has_vri' => $hasVri,
+        'has_ocsps' => $hasOcsps,
+        'has_crls' => $hasCrls,
+    ],
+    'revocation_endpoints' => $signatureDetails,
+    'revocation_risk_summary' => $revocationSummary,
+    'inferred_profile' => inferProfile(
+        hasSignatures: $validation->hasSignatures,
+        hasCades: $hasCades,
+        docTimestampCount: (int) $docTimestampCount,
+        hasDss: $hasDss
+    ),
+];
+
+if (isset($options['json'])) {
+    fwrite(STDOUT, json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+    exit(0);
+}
+
+fwrite(STDOUT, "Signer PHP Inspect\n");
+fwrite(STDOUT, "File: {$report['file']}\n");
+fwrite(STDOUT, "Size: {$report['size_bytes']} bytes\n");
+fwrite(STDOUT, "Signatures: ".($report['signatures']['has_signatures'] ? 'yes' : 'no')." ({$report['signatures']['count']})\n");
+fwrite(STDOUT, "All valid (crypto+byterange): ".($report['signatures']['all_valid'] ? 'yes' : 'no')."\n");
+fwrite(STDOUT, "Inferred profile: {$report['inferred_profile']}\n");
+fwrite(STDOUT, "Has CAdES SubFilter: ".($hasCades ? 'yes' : 'no')."\n");
+fwrite(STDOUT, "Has RFC3161 SubFilter: ".($hasRfc3161 ? 'yes' : 'no')."\n");
+fwrite(STDOUT, "DocTimeStamp count: {$docTimestampCount}\n");
+fwrite(STDOUT, "Has DocMDP: ".($hasDocMdp ? 'yes' : 'no')."\n");
+fwrite(STDOUT, "Has DSS: ".($hasDss ? 'yes' : 'no')."\n");
+fwrite(STDOUT, "Has VRI: ".($hasVri ? 'yes' : 'no')."\n");
+fwrite(STDOUT, "Has OCSPs: ".($hasOcsps ? 'yes' : 'no')."\n");
+fwrite(STDOUT, "Has CRLs: ".($hasCrls ? 'yes' : 'no')."\n");
+
+if ($signatureDetails !== []) {
+    fwrite(STDOUT, "Revocation endpoints by certificate:\n");
+    foreach ($signatureDetails as $sig) {
+        fwrite(STDOUT, sprintf("  Signature #%d (%d certs)\n", $sig['signature_index'], $sig['certificates_count']));
+        foreach ($sig['certificates'] as $cert) {
+            fwrite(STDOUT, sprintf(
+                "    - cert[%d] subject=%s ocsp=%s crl=%s\n",
+                $cert['cert_index'],
+                $cert['subject'] ?? '-',
+                $cert['has_ocsp'] ? 'yes' : 'no',
+                $cert['has_crl'] ? 'yes' : 'no',
+            ));
+            if ($cert['ocsp_urls'] !== []) {
+                fwrite(STDOUT, '      ocsp_urls: '.implode(', ', $cert['ocsp_urls'])."\n");
+            }
+            if ($cert['crl_urls'] !== []) {
+                fwrite(STDOUT, '      crl_urls: '.implode(', ', $cert['crl_urls'])."\n");
+            }
+        }
+    }
+}
+
+fwrite(STDOUT, "Revocation risk summary:\n");
+fwrite(STDOUT, sprintf(
+    "  certificates_analyzed=%d ocsp_missing=%d crl_missing=%d\n",
+    $revocationSummary['certificates_analyzed'],
+    $revocationSummary['ocsp_missing_count'],
+    $revocationSummary['crl_missing_count'],
+));
+fwrite(STDOUT, sprintf(
+    "  flags: ocsp_missing=%s crl_missing=%s ocsp_unreachable=%s crl_unreachable=%s\n",
+    $revocationSummary['risk_flags']['ocsp_missing'] ? 'yes' : 'no',
+    $revocationSummary['risk_flags']['crl_missing'] ? 'yes' : 'no',
+    $revocationSummary['risk_flags']['ocsp_unreachable'] ? 'yes' : 'no',
+    $revocationSummary['risk_flags']['crl_unreachable'] ? 'yes' : 'no',
+));
+if ($revocationSummary['ocsp_unreachable_urls'] !== []) {
+    fwrite(STDOUT, '  ocsp_unreachable_urls: '.implode(', ', $revocationSummary['ocsp_unreachable_urls'])."\n");
+}
+if ($revocationSummary['crl_unreachable_urls'] !== []) {
+    fwrite(STDOUT, '  crl_unreachable_urls: '.implode(', ', $revocationSummary['crl_unreachable_urls'])."\n");
+}
