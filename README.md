@@ -554,6 +554,18 @@ Main inspection fields:
 
 This inspection helps explain warnings reported by external validators (for example CRL/OCSP connectivity issues).
 
+## Environment diagnostics via CLI
+
+Use `bin/signer-doctor` to quickly validate runtime dependencies (PHP version, required extensions, OpenSSL binary and `openssl ts`, `qpdf`, and temporary directory access).
+
+```bash
+php bin/signer-doctor
+```
+
+```bash
+php bin/signer-doctor --json
+```
+
 ## Recommended flow (Brazil/ITI)
 
 1. Sign with `--policy=br-iti` using `bin/signer-sign`.
@@ -597,7 +609,7 @@ docker compose down
 
 ## Sign using command line (CLI)
 
-The project provides `bin/signer-sign` and `bin/signer-inspect`.
+The project provides `bin/signer-sign`, `bin/signer-inspect`, and `bin/signer-doctor`.
 
 ### Basic usage
 

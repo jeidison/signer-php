@@ -553,6 +553,18 @@ Campos principais da inspeção:
 
 Essa inspeção ajuda a explicar avisos em validadores externos (ex.: indisponibilidade de CRL/OCSP).
 
+## Diagnóstico de ambiente via CLI
+
+Use `bin/signer-doctor` para validar rapidamente dependências de runtime (versão do PHP, extensões obrigatórias, binário OpenSSL e `openssl ts`, `qpdf` e acesso ao diretório temporário).
+
+```bash
+php bin/signer-doctor
+```
+
+```bash
+php bin/signer-doctor --json
+```
+
 ## Fluxo recomendado (Brasil/ITI)
 
 1. Assine com `--policy=br-iti` no `bin/signer-sign`.
@@ -562,7 +574,7 @@ Essa inspeção ajuda a explicar avisos em validadores externos (ex.: indisponib
 
 ## Assinando via linha de comando (CLI)
 
-O projeto expõe os executáveis `bin/signer-sign` e `bin/signer-inspect`.
+O projeto expõe os executáveis `bin/signer-sign`, `bin/signer-inspect` e `bin/signer-doctor`.
 
 ### Uso básico
 

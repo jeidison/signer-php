@@ -1,0 +1,173 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+require __DIR__.'/../vendor/autoload.php';
+
+/**
+ * @return array<string, string|bool>
+ */
+function parseOptions(): array
+{
+    $options = getopt('', ['json', 'help']);
+
+    return is_array($options) ? $options : [];
+}
+
+function printUsage(): void
+{
+    fwrite(STDOUT, <<<TXT
+Signer PHP Doctor CLI
+
+Usage:
+  php bin/signer-doctor [--json]
+
+Options:
+  --json   Print JSON output
+  --help   Show this help
+
+TXT);
+}
+
+/**
+ * @return array{ok:bool,output:string}
+ */
+function runCommand(string $command): array
+{
+    $output = [];
+    $code = 1;
+    exec($command.' 2>&1', $output, $code);
+
+    return [
+        'ok' => $code === 0,
+        'output' => trim(implode("\n", $output)),
+    ];
+}
+
+function commandExists(string $command): bool
+{
+    $result = runCommand('command -v '.escapeshellarg($command));
+
+    return $result['ok'] && $result['output'] !== '';
+}
+
+/**
+ * @param  array<int, array<string, mixed>>  $checks
+ */
+function printTextReport(array $checks, bool $allRequiredOk): void
+{
+    fwrite(STDOUT, "Signer PHP - Environment Doctor\n\n");
+
+    foreach ($checks as $check) {
+        $status = $check['ok'] ? 'OK' : ($check['required'] ? 'FAIL' : 'WARN');
+        $requiredLabel = $check['required'] ? 'required' : 'optional';
+
+        fwrite(
+            STDOUT,
+            sprintf("[%s] %s (%s)\n", $status, $check['name'], $requiredLabel)
+        );
+
+        if (isset($check['details']) && is_string($check['details']) && $check['details'] !== '') {
+            fwrite(STDOUT, '      '.$check['details'].PHP_EOL);
+        }
+    }
+
+    fwrite(STDOUT, PHP_EOL);
+    fwrite(STDOUT, $allRequiredOk ? "Environment looks good.\n" : "Required checks failed.\n");
+}
+
+$options = parseOptions();
+if (isset($options['help'])) {
+    printUsage();
+    exit(0);
+}
+
+$checks = [];
+
+$checks[] = [
+    'name' => 'PHP version >= 8.4',
+    'required' => true,
+    'ok' => PHP_VERSION_ID >= 80400,
+    'details' => PHP_VERSION,
+];
+
+foreach (['openssl', 'curl', 'zlib', 'fileinfo'] as $extension) {
+    $checks[] = [
+        'name' => sprintf('PHP extension "%s"', $extension),
+        'required' => true,
+        'ok' => extension_loaded($extension),
+        'details' => extension_loaded($extension) ? 'loaded' : 'missing',
+    ];
+}
+
+$opensslExists = commandExists('openssl');
+$opensslVersion = $opensslExists ? runCommand('openssl version') : ['ok' => false, 'output' => 'not found'];
+$checks[] = [
+    'name' => 'OpenSSL binary available',
+    'required' => true,
+    'ok' => $opensslExists,
+    'details' => $opensslVersion['output'],
+];
+
+$opensslTs = $opensslExists ? runCommand('openssl ts -help') : ['ok' => false, 'output' => 'skipped'];
+$checks[] = [
+    'name' => 'OpenSSL ts command support',
+    'required' => true,
+    'ok' => $opensslExists && $opensslTs['ok'],
+    'details' => $opensslExists ? ($opensslTs['ok'] ? 'supported' : 'not supported') : 'openssl missing',
+];
+
+$qpdfExists = commandExists('qpdf');
+$qpdfVersion = $qpdfExists ? runCommand('qpdf --version') : ['ok' => false, 'output' => 'not found'];
+$checks[] = [
+    'name' => 'qpdf binary available (PDF protection feature)',
+    'required' => false,
+    'ok' => $qpdfExists,
+    'details' => $qpdfVersion['output'],
+];
+
+$tmp = sys_get_temp_dir();
+$tmpWritable = is_dir($tmp) && is_writable($tmp);
+$checks[] = [
+    'name' => 'Temporary directory writable',
+    'required' => true,
+    'ok' => $tmpWritable,
+    'details' => $tmp,
+];
+
+$tempFileCreated = false;
+$tempPath = null;
+if ($tmpWritable) {
+    $tempPath = tempnam($tmp, 'signer-doctor-');
+    if (is_string($tempPath) && $tempPath !== '') {
+        $tempFileCreated = file_put_contents($tempPath, 'ok') !== false;
+        @unlink($tempPath);
+    }
+}
+
+$checks[] = [
+    'name' => 'Temporary file create/write',
+    'required' => true,
+    'ok' => $tempFileCreated,
+    'details' => $tempPath ?? 'not created',
+];
+
+$allRequiredOk = true;
+foreach ($checks as $check) {
+    if (($check['required'] ?? false) && ! ($check['ok'] ?? false)) {
+        $allRequiredOk = false;
+        break;
+    }
+}
+
+if (isset($options['json'])) {
+    fwrite(STDOUT, json_encode([
+        'ok' => $allRequiredOk,
+        'checks' => $checks,
+    ], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES).PHP_EOL);
+} else {
+    printTextReport($checks, $allRequiredOk);
+}
+
+exit($allRequiredOk ? 0 : 1);

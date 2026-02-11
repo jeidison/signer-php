@@ -16,7 +16,8 @@
     ],
     "bin": [
         "bin/signer-sign",
-        "bin/signer-inspect"
+        "bin/signer-inspect",
+        "bin/signer-doctor"
     ],
     "require": {
         "php": "^8.4",
