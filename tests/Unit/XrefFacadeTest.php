@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace SignerPHP\Tests\Unit;
 
+use PHPUnit\Framework\TestCase;
 use SignerPHP\Infrastructure\PdfCore\PdfDocument;
 use SignerPHP\Infrastructure\PdfCore\PDFObject;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueObject;
 use SignerPHP\Infrastructure\PdfCore\Xref\Xref;
 use SignerPHP\Infrastructure\PdfCore\Xref\XrefParseResult;
-use PHPUnit\Framework\TestCase;
 
 final class XrefFacadeTest extends TestCase
 {

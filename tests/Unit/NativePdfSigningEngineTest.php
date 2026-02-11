@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace SignerPHP\Tests\Unit;
 
+use PHPUnit\Framework\TestCase;
+use RuntimeException;
 use SignerPHP\Application\DTO\CertificateCredentialsDto;
 use SignerPHP\Application\DTO\PdfContentDto;
 use SignerPHP\Application\DTO\SigningContextDto;
@@ -18,8 +20,6 @@ use SignerPHP\Infrastructure\Native\NativePdfSigningEngine;
 use SignerPHP\Infrastructure\PdfCore\Buffer;
 use SignerPHP\Infrastructure\PdfCore\PdfDocument;
 use SignerPHP\Infrastructure\PdfCore\Signature;
-use PHPUnit\Framework\TestCase;
-use RuntimeException;
 
 final class NativePdfSigningEngineTest extends TestCase
 {

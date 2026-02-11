@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace SignerPHP\Tests\Unit;
 
+use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use SignerPHP\Application\DTO\CertificateCredentialsDto;
 use SignerPHP\Application\DTO\CertificationLevel;
 use SignerPHP\Application\DTO\PdfContentDto;
@@ -19,8 +21,6 @@ use SignerPHP\Infrastructure\PdfCore\PdfDocument;
 use SignerPHP\Infrastructure\PdfCore\Signature;
 use SignerPHP\Infrastructure\PdfCore\SignatureAppearance;
 use SignerPHP\Infrastructure\PdfCore\SignatureObject;
-use PHPUnit\Framework\TestCase;
-use ReflectionClass;
 
 final class PdfSignatureFactoryTest extends TestCase
 {

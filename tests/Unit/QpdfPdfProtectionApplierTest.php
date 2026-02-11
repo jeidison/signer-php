@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace SignerPHP\Tests\Unit;
 
+use PHPUnit\Framework\TestCase;
 use SignerPHP\Application\DTO\ProtectionOptionsDto;
 use SignerPHP\Domain\Exception\ProtectionProcessException;
 use SignerPHP\Infrastructure\Native\Contract\CommandExecutorInterface;
 use SignerPHP\Infrastructure\Native\Service\NativeFunctionOverrideState;
 use SignerPHP\Infrastructure\Native\Service\QpdfPdfProtectionApplier;
-use PHPUnit\Framework\TestCase;
 
 final class QpdfPdfProtectionApplierTest extends TestCase
 {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SignerPHP\Tests\Unit;
 
+use PHPUnit\Framework\TestCase;
 use SignerPHP\Application\DTO\SignatureValidationOptionsDto;
 use SignerPHP\Infrastructure\Native\Contract\HttpClientInterface;
 use SignerPHP\Infrastructure\Native\Contract\ProcessRunnerInterface;
@@ -13,7 +14,6 @@ use SignerPHP\Infrastructure\Native\Service\NativeFunctionOverrideState;
 use SignerPHP\Infrastructure\Native\Service\OpenSslSignatureTrustVerifier;
 use SignerPHP\Infrastructure\Native\ValueObject\HttpResponse;
 use SignerPHP\Infrastructure\Native\ValueObject\ProcessResult;
-use PHPUnit\Framework\TestCase;
 
 final class OpenSslSignatureTrustVerifierTest extends TestCase
 {
