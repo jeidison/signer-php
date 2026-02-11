@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace SignerPHP\Tests\Unit;
 
+use PHPUnit\Framework\TestCase;
 use SignerPHP\Infrastructure\PdfCore\PdfDocument;
 use SignerPHP\Infrastructure\PdfCore\PDFObject;
 use SignerPHP\Infrastructure\PdfCore\Utils\Img;
-use PHPUnit\Framework\TestCase;
 
 final class ImgTest extends TestCase
 {

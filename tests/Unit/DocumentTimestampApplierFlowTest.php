@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace SignerPHP\Tests\Unit;
 
+use PHPUnit\Framework\TestCase;
 use SignerPHP\Application\DTO\TimestampOptionsDto;
 use SignerPHP\Infrastructure\Native\Contract\TimestampTokenProviderInterface;
 use SignerPHP\Infrastructure\Native\Service\DocumentTimestampApplier;
 use SignerPHP\Tests\Support\PdfFixtureFactory;
-use PHPUnit\Framework\TestCase;
 
 final class DocumentTimestampApplierFlowTest extends TestCase
 {

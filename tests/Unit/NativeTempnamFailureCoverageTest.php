@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SignerPHP\Tests\Unit;
 
+use PHPUnit\Framework\TestCase;
 use SignerPHP\Application\DTO\SignatureValidationOptionsDto;
 use SignerPHP\Domain\Exception\SignatureValidationException;
 use SignerPHP\Infrastructure\Native\Contract\HttpClientInterface;
@@ -12,7 +13,6 @@ use SignerPHP\Infrastructure\Native\Service\NativeFunctionOverrideState;
 use SignerPHP\Infrastructure\Native\Service\OpenSslBrazilPolicyListVerifier;
 use SignerPHP\Infrastructure\Native\Service\OpenSslSignatureCryptoVerifier;
 use SignerPHP\Infrastructure\Native\ValueObject\HttpResponse;
-use PHPUnit\Framework\TestCase;
 
 final class NativeTempnamFailureCoverageTest extends TestCase
 {
