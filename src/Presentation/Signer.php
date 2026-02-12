@@ -7,6 +7,7 @@ namespace SignerPHP\Presentation;
 use SignerPHP\Application\Service\PdfProtectionService;
 use SignerPHP\Application\Service\PdfSignatureValidationService;
 use SignerPHP\Application\Service\PdfSigningService;
+use SignerPHP\Application\Service\TimestampService;
 use SignerPHP\Infrastructure\Legacy\OpenSslCertificateValidator;
 use SignerPHP\Infrastructure\Native\NativePdfProtectionEngine;
 use SignerPHP\Infrastructure\Native\NativePdfSignatureValidationEngine;
@@ -37,5 +38,10 @@ final class Signer
         $service = new PdfSignatureValidationService(new NativePdfSignatureValidationEngine);
 
         return PdfSignatureValidatorBuilder::new($service);
+    }
+
+    public static function timestamp(): TimestampBuilder
+    {
+        return TimestampBuilder::new(new TimestampService);
     }
 }

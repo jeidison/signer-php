@@ -237,6 +237,32 @@ $signedPdf = Signer::signer()
  ->sign();
 ```
 
+### 6.3) Teste real de TSA e geração de token (RFC3161)
+
+Para fluxos de SaaS/API, você pode executar a rotina real do TSA (não só ping de endpoint) usando a fachada de timestamp:
+
+```php
+<?php
+
+use SignerPHP\Application\DTO\TimestampOptionsDto;
+use SignerPHP\Presentation\Signer;
+
+$tsa = Signer::timestamp()
+ ->withOptions(new TimestampOptionsDto(
+     tsaUrl: 'https://freetsa.org/tsr',
+     hashAlgorithm: 'sha256',
+ ));
+
+$connection = $tsa->testConnection();
+if (! $connection->success) {
+    throw new RuntimeException('Teste de TSA falhou: '.($connection->message ?? 'erro desconhecido'));
+}
+
+$tokenHex = $tsa
+ ->withContent('conteudo-de-prova')
+ ->requestTokenHex();
+```
+
 ### 6.3) Habilitar perfil PAdES Baseline-B
 
 ```php
