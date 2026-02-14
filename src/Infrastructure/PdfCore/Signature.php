@@ -12,7 +12,7 @@ use SignerPHP\Infrastructure\PdfCore\Service\SignatureObjectAssembler;
 
 class Signature
 {
-    const SIGNATURE_MAX_LENGTH = 11742;
+    const SIGNATURE_MAX_LENGTH = 262144;
 
     private array $certificate = [
         'cert' => '',
