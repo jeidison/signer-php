@@ -529,4 +529,18 @@ final class ObjectStreamResolverTest extends TestCase
             ],
         ];
     }
+    public function test_attach_object_stream_if_present_ignores_stream_without_marker(): void
+    {
+        // Object has stream keyword but no valid marker (\n or \r\n) after stream
+        $buffer = "1 0 obj\n<< /Length 4 >>\nstream  INVALID\nendstream\nendobj\n";
+        $document = new PdfDocument;
+        $document->setBufferFromString($buffer);
+
+        $offsetEnd = 0;
+        $object = $document->objectFromString(1, 0, $offsetEnd);
+        (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
+
+        // When no valid stream marker is found, attachObjectStreamIfPresent returns early with empty stream
+        self::assertSame('', $object->getStream());
+    }
 }
