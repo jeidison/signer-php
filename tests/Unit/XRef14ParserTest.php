@@ -32,6 +32,15 @@ final class XRef14ParserTest extends TestCase
         (new XRef14Parser)->parse($buffer, 0);
     }
 
+    public function test_parse_accepts_leading_blank_lines_before_xref_tag(): void
+    {
+        $buffer = "\n\r\nxref\n0 1\n0000000010 00000 n \ntrailer\n<< /Size 1 >>\nstartxref\n0\n%%EOF\n";
+
+        $result = (new XRef14Parser)->parse($buffer, 0);
+
+        self::assertSame(10, $result->table[0]);
+    }
+
     public function test_parse_throws_when_section_header_appears_before_consuming_entries(): void
     {
         $buffer = "xref\n0 2\n1 1\n0000000001 00000 n \ntrailer\n<< /Size 2 >>\nstartxref\n0\n%%EOF\n";

@@ -12,6 +12,10 @@ use SignerPHP\Infrastructure\PdfCore\Xref\XrefParseResult;
 
 final class XRef14Parser
 {
+    /**
+     * @throws PdfCoreParsingException
+     * @throws PdfCoreStructureException
+     */
     public function parse(string $buffer, int $xrefPosition): XrefParseResult
     {
         $trailerPosition = strpos($buffer, 'trailer', $xrefPosition);
@@ -37,18 +41,27 @@ final class XRef14Parser
 
     /**
      * @return array<int, int|array{stmoid:int,pos:int}|null>
+     *
+     * @throws PdfCoreParsingException
+     * @throws PdfCoreStructureException
      */
     private function parseEntries(string $xrefText, int $xrefPosition): array
     {
         $lineSeparator = "\r\n";
         $line = strtok($xrefText, $lineSeparator);
-        if ($line !== 'xref') {
+        while ($line !== false && trim($line) === '') {
+            $line = strtok($lineSeparator);
+        }
+
+        if ($line === false || trim($line) !== 'xref') {
             throw new PdfCoreParsingException('Xref tag not found at position '.$xrefPosition);
         }
 
         $currentObjectId = 0;
         $remainingObjectsInSection = 0;
         $xrefTable = [];
+        $sawSectionHeader = false;
+        $parsedEntries = 0;
 
         while (($line = strtok($lineSeparator)) !== false) {
             if (preg_match('/(\d+) (\d+)$/', $line, $matches) === 1) {
@@ -56,6 +69,7 @@ final class XRef14Parser
                     throw new PdfCoreParsingException('Malformed xref at position '.$xrefPosition);
                 }
 
+                $sawSectionHeader = true;
                 $currentObjectId = (int) $matches[1];
                 $remainingObjectsInSection = (int) $matches[2];
 
@@ -71,8 +85,13 @@ final class XRef14Parser
             }
 
             $this->applyEntry($xrefTable, $currentObjectId, (int) $matches[1], (int) $matches[2], $matches[3]);
+            $parsedEntries++;
             $currentObjectId++;
             $remainingObjectsInSection--;
+        }
+
+        if (! $sawSectionHeader || $parsedEntries === 0) {
+            throw new PdfCoreParsingException('Malformed xref at position '.$xrefPosition);
         }
 
         return $xrefTable;
@@ -80,6 +99,8 @@ final class XRef14Parser
 
     /**
      * @param  array<int, int|array{stmoid:int,pos:int}|null>  $xrefTable
+     *
+     * @throws PdfCoreStructureException
      */
     private function applyEntry(array &$xrefTable, int $objectId, int $offset, int $generation, string $operation): void
     {
@@ -105,6 +126,9 @@ final class XRef14Parser
     /**
      * @param  array<int, int|array{stmoid:int,pos:int}|null>  $currentTable
      * @return array<int, int|array{stmoid:int,pos:int}|null>
+     *
+     * @throws PdfCoreParsingException
+     * @throws PdfCoreStructureException
      */
     private function mergePreviousTables(string $buffer, PDFValue $trailer, string $version, array $currentTable): array
     {
