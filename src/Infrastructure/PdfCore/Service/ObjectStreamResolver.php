@@ -106,7 +106,7 @@ final class ObjectStreamResolver
                 throw new PdfCoreStructureException('Could not resolve stream length object '.$lengthObjectId.' for object '.$oid.'.');
             }
 
-            $length = $this->resolveLengthFromObject($pdfDocument, $lengthObject, [$lengthObjectId]);
+            $length = $this->resolveLengthFromObject($pdfDocument, $lengthObject, [$lengthObjectId => true]);
         }
 
         if ($length === null || $length < 0) {
