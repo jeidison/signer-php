@@ -468,4 +468,65 @@ final class ObjectStreamResolverTest extends TestCase
 
         (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
     }
+
+    public function test_attach_object_stream_if_present_throws_when_embedded_scalar_is_invalid_reference(): void
+    {
+        // Object 2 contains an array (invalid scalar)
+        $buffer = "1 0 obj\n<< /Length 2 0 R >>\nstream\nDATA\nendstream\nendobj\n2 0 obj\n[1 2 3]\nendobj\n";
+        $document = new PdfDocument;
+        $document->setBufferFromString($buffer);
+        $offset2 = strpos($buffer, "2 0 obj\n");
+        self::assertIsInt($offset2);
+        $document->setXrefTable([1 => 0, 2 => $offset2]);
+
+        $offsetEnd = 0;
+        $object = $document->objectFromString(1, 0, $offsetEnd);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Could not resolve valid stream length for object 1.');
+
+        (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
+    }
+
+    public function test_attach_object_stream_if_present_detects_crlf_stream_marker_offset(): void
+    {
+        // Using \r\n instead of \n after "stream" keyword to test the CRLF path
+        $buffer = "1 0 obj\n<< /Length 4 >>\nstream\r\nDATA\nendstream\nendobj\n";
+        $document = new PdfDocument;
+        $document->setBufferFromString($buffer);
+
+        $offsetEnd = 0;
+        $object = $document->objectFromString(1, 0, $offsetEnd);
+        (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
+
+        self::assertSame('DATA', $object->getStream());
+    }
+        #[DataProvider('provideStreamMarkerOffsets')]
+    public function test_attach_object_stream_if_present_handles_different_stream_markers(
+        string $buffer,
+        string $expectedData,
+    ): void {
+        $document = new PdfDocument;
+        $document->setBufferFromString($buffer);
+
+        $offsetEnd = 0;
+        $object = $document->objectFromString(1, 0, $offsetEnd);
+        (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
+
+        self::assertSame($expectedData, $object->getStream());
+    }
+
+    public static function provideStreamMarkerOffsets(): array
+    {
+        return [
+            'LF stream marker' => [
+                "1 0 obj\n<< /Length 4 >>\nstream\nDATA\nendstream\nendobj\n",
+                'DATA',
+            ],
+            'CRLF stream marker' => [
+                "1 0 obj\n<< /Length 4 >>\nstream\r\nDATA\nendstream\nendobj\n",
+                'DATA',
+            ],
+        ];
+    }
 }
