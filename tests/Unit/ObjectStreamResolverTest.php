@@ -507,6 +507,38 @@ final class ObjectStreamResolverTest extends TestCase
         (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
     }
 
+    public function test_attach_object_stream_if_present_throws_when_embedded_scalar_has_null_key(): void
+    {
+        $buffer = "1 0 obj\n<< /Length 2 0 R >>\nstream\nDATA\nendstream\nendobj\n";
+
+        $lengthObject = new class(2) extends PDFObject
+        {
+            public function getKeys(): array
+            {
+                return [null];
+            }
+        };
+
+        $document = new class($lengthObject) extends PdfDocument
+        {
+            public function __construct(private readonly PDFObject $lengthObject) {}
+
+            public function findObject(int $oid): ?PDFObject
+            {
+                return $oid === 2 ? $this->lengthObject : null;
+            }
+        };
+        $document->setBufferFromString($buffer);
+
+        $offsetEnd = 0;
+        $object = $document->objectFromString(1, 0, $offsetEnd);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Could not resolve valid stream length for object 1.');
+
+        (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
+    }
+
     public function test_attach_object_stream_if_present_throws_when_embedded_scalar_is_invalid_reference(): void
     {
         // Object 2 contains an array (invalid scalar)
