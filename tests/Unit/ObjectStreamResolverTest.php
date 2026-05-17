@@ -318,20 +318,58 @@ final class ObjectStreamResolverTest extends TestCase
         (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
     }
 
-    public function test_attach_object_stream_if_present_reads_length_from_indirect_scalar_object(): void
-    {
-        $buffer = "1 0 obj\n<< /Length 2 0 R >>\nstream\nDATA\nendstream\nendobj\n2 0 obj\n4\nendobj\n";
+    #[DataProvider('provideCorpusDerivedIndirectLengthSnippets')]
+    public function test_attach_object_stream_if_present_reads_length_from_indirect_scalar_object(
+        string $buffer,
+        array $xrefTable,
+        int $objectId,
+        string $expectedStream,
+    ): void {
         $document = new PdfDocument;
         $document->setBufferFromString($buffer);
-        $offsetTwo = strpos($buffer, "2 0 obj\n");
-        self::assertIsInt($offsetTwo);
-        $document->setXrefTable([1 => 0, 2 => $offsetTwo]);
+        $document->setXrefTable($xrefTable);
 
         $offsetEnd = 0;
-        $object = $document->objectFromString(1, 0, $offsetEnd);
-        (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
+        $object = $document->objectFromString($objectId, 0, $offsetEnd);
+        (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, $objectId);
 
-        self::assertSame('DATA', $object->getStream());
+        self::assertSame($expectedStream, $object->getStream());
+    }
+
+    public static function provideCorpusDerivedIndirectLengthSnippets(): array
+    {
+        // Extracted from corpus file:
+        // bfo-isartor-subset/PDF_A-1b/6.6 Actions/6.6.1 General/veraPDF test suite 6-6-1-t01-fail-a.pdf
+        // 6 0 obj << /Type /Metadata /Subtype /XML /Length 11 0 R >> ... endobj
+        // 11 0 obj 879 endobj
+        $metadataLength879 = str_repeat('M', 879);
+        $bufferFrom661 = "6 0 obj\n<< /Type /Metadata /Subtype /XML /Length 11 0 R >>\nstream\n{$metadataLength879}\nendstream\nendobj\n11 0 obj\n879\nendobj\n";
+        $offset661Length = strpos($bufferFrom661, "11 0 obj\n");
+
+        // Extracted from corpus file:
+        // bfo-isartor-subset/PDF_A-1b/6.6 Actions/6.6.2 Trigger events/veraPDF test suite 6-6-2-t01-fail-a.pdf
+        // 6 0 obj << /Type /Metadata /Subtype /XML /Length 15 0 R >> ... endobj
+        // 15 0 obj 879 endobj
+        $bufferFrom662 = "6 0 obj\n<< /Type /Metadata /Subtype /XML /Length 15 0 R >>\nstream\n{$metadataLength879}\nendstream\nendobj\n15 0 obj\n879\nendobj\n";
+        $offset662Length = strpos($bufferFrom662, "15 0 obj\n");
+
+        self::assertIsInt($offset661Length);
+        self::assertIsInt($offset662Length);
+
+        return [
+            'corpus 6-6-1-t01-fail-a metadata length indirection' => [
+                $bufferFrom661,
+                [6 => 0, 11 => $offset661Length],
+                6,
+                $metadataLength879,
+            ],
+            'corpus 6-6-2-t01-fail-a metadata length indirection' => [
+                $bufferFrom662,
+                [6 => 0, 15 => $offset662Length],
+                6,
+                $metadataLength879,
+            ],
+        ];
     }
 
     public function test_attach_object_stream_if_present_reads_stream_with_crlf_marker(): void
@@ -501,7 +539,8 @@ final class ObjectStreamResolverTest extends TestCase
 
         self::assertSame('DATA', $object->getStream());
     }
-        #[DataProvider('provideStreamMarkerOffsets')]
+
+    #[DataProvider('provideStreamMarkerOffsets')]
     public function test_attach_object_stream_if_present_handles_different_stream_markers(
         string $buffer,
         string $expectedData,
@@ -529,6 +568,7 @@ final class ObjectStreamResolverTest extends TestCase
             ],
         ];
     }
+
     public function test_attach_object_stream_if_present_ignores_stream_without_marker(): void
     {
         // Object has stream keyword but no valid marker (\n or \r\n) after stream

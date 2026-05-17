@@ -161,7 +161,7 @@ final class ObjectStreamResolver
         }
 
         $firstKey = $keys[0] ?? null;
-        if (! is_int($firstKey) && ! is_string($firstKey)) {
+        if ($firstKey === null) {
             return null;
         }
 
