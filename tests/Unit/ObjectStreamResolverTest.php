@@ -338,16 +338,14 @@ final class ObjectStreamResolverTest extends TestCase
 
     public static function provideCorpusDerivedIndirectLengthSnippets(): array
     {
-        // Extracted from corpus file:
-        // bfo-isartor-subset/PDF_A-1b/6.6 Actions/6.6.1 General/veraPDF test suite 6-6-1-t01-fail-a.pdf
+        // Real-world pattern: metadata stream with indirect /Length referencing a scalar object.
         // 6 0 obj << /Type /Metadata /Subtype /XML /Length 11 0 R >> ... endobj
         // 11 0 obj 879 endobj
         $metadataLength879 = str_repeat('M', 879);
         $bufferFrom661 = "6 0 obj\n<< /Type /Metadata /Subtype /XML /Length 11 0 R >>\nstream\n{$metadataLength879}\nendstream\nendobj\n11 0 obj\n879\nendobj\n";
         $offset661Length = strpos($bufferFrom661, "11 0 obj\n");
 
-        // Extracted from corpus file:
-        // bfo-isartor-subset/PDF_A-1b/6.6 Actions/6.6.2 Trigger events/veraPDF test suite 6-6-2-t01-fail-a.pdf
+        // Variant of the same pattern with a different indirect object id.
         // 6 0 obj << /Type /Metadata /Subtype /XML /Length 15 0 R >> ... endobj
         // 15 0 obj 879 endobj
         $bufferFrom662 = "6 0 obj\n<< /Type /Metadata /Subtype /XML /Length 15 0 R >>\nstream\n{$metadataLength879}\nendstream\nendobj\n15 0 obj\n879\nendobj\n";
