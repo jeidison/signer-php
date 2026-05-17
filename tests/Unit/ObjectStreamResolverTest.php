@@ -431,4 +431,41 @@ final class ObjectStreamResolverTest extends TestCase
 
         (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
     }
+
+    public function test_attach_object_stream_if_present_throws_when_indirect_chain_references_missing_object(): void
+    {
+        // Chain: 1 -> 2 -> 3 (missing)
+        $buffer = "1 0 obj\n<< /Length 2 0 R >>\nstream\nDATA\nendstream\nendobj\n2 0 obj\n<< /Next 3 0 R >>\nendobj\n";
+        $document = new PdfDocument;
+        $document->setBufferFromString($buffer);
+        $offset2 = strpos($buffer, "2 0 obj\n");
+        self::assertIsInt($offset2);
+        $document->setXrefTable([1 => 0, 2 => $offset2]);
+
+        $offsetEnd = 0;
+        $object = $document->objectFromString(1, 0, $offsetEnd);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Could not resolve valid stream length for object 1.');
+
+        (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
+    }
+
+    public function test_attach_object_stream_if_present_throws_when_embedded_scalar_is_empty_object(): void
+    {
+        $buffer = "1 0 obj\n<< /Length 2 0 R >>\nstream\nDATA\nendstream\nendobj\n2 0 obj\n<< >>\nendobj\n";
+        $document = new PdfDocument;
+        $document->setBufferFromString($buffer);
+        $offset2 = strpos($buffer, "2 0 obj\n");
+        self::assertIsInt($offset2);
+        $document->setXrefTable([1 => 0, 2 => $offset2]);
+
+        $offsetEnd = 0;
+        $object = $document->objectFromString(1, 0, $offsetEnd);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Could not resolve valid stream length for object 1.');
+
+        (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
+    }
 }
