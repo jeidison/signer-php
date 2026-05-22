@@ -63,16 +63,15 @@ final class XRef15ParserTest extends TestCase
         self::assertSame(77, $result->table[2]);
     }
 
-    public function test_parse_throws_when_generation_is_non_zero_for_type_one(): void
+    public function test_parse_keeps_offset_entry_when_generation_is_non_zero_for_type_one(): void
     {
         $stream = chr(1).pack('n', 123).chr(1);
         $object = $this->xrefObject($stream, [1, 2, 1], [5, 1], 10);
         $document = $this->documentAtPositions([100 => $object]);
 
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Objects of non-zero generation are not supported.');
+        $result = (new XRef15Parser)->parse($document, 100);
 
-        (new XRef15Parser)->parse($document, 100);
+        self::assertSame(123, $result->table[5]);
     }
 
     public function test_parse_throws_for_invalid_entry_type(): void
@@ -161,12 +160,28 @@ final class XRef15ParserTest extends TestCase
     }
 
     /** @param array<int, PDFObject> $objectsByPosition */
-    private function documentAtPositions(array $objectsByPosition): PdfDocument
+    private function documentAtPositions(array $objectsByPosition, string $buffer = ''): PdfDocument
     {
-        return new class($objectsByPosition) extends PdfDocument
+        if ($buffer === '') {
+            ksort($objectsByPosition);
+            $buffer = '';
+            $cursor = 0;
+            foreach (array_keys($objectsByPosition) as $offset) {
+                if ($offset > $cursor) {
+                    $buffer .= str_repeat(' ', $offset - $cursor);
+                }
+                $buffer .= '1 0 obj';
+                $cursor = strlen($buffer);
+            }
+        }
+
+        return new class($objectsByPosition, $buffer) extends PdfDocument
         {
             /** @param array<int, PDFObject> $objectsByPosition */
-            public function __construct(private readonly array $objectsByPosition) {}
+            public function __construct(private readonly array $objectsByPosition, string $buffer)
+            {
+                $this->setBufferFromString($buffer);
+            }
 
             public function objectFromString(int|string|null $expectedObjId, int $offset = 0, int &$offsetEnd = 0): PDFObject
             {

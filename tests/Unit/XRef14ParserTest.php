@@ -25,7 +25,7 @@ final class XRef14ParserTest extends TestCase
 
     public function test_parse_throws_when_xref_tag_is_missing_at_position(): void
     {
-        $buffer = "notxref\ntrailer\n<< /Size 1 >>\nstartxref\n0\n%%EOF\n";
+        $buffer = "no-tag-here\ntrailer\n<< /Size 1 >>\nstartxref\n0\n%%EOF\n";
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('Xref tag not found at position 0');
@@ -59,31 +59,31 @@ final class XRef14ParserTest extends TestCase
         self::assertSame(10, $result->table[0]);
     }
 
-    public function test_parse_throws_when_section_header_appears_before_consuming_entries(): void
+    public function test_parse_accepts_section_header_appearing_before_previous_section_is_fully_consumed(): void
     {
         $buffer = "xref\n0 2\n1 1\n0000000001 00000 n \ntrailer\n<< /Size 2 >>\nstartxref\n0\n%%EOF\n";
 
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Malformed xref at position 0');
-        (new XRef14Parser)->parse($buffer, 0);
+        $result = (new XRef14Parser)->parse($buffer, 0);
+
+        self::assertSame(1, $result->table[1]);
     }
 
-    public function test_parse_throws_when_entry_appears_without_open_section(): void
+    public function test_parse_skips_entry_that_appears_outside_declared_section(): void
     {
         $buffer = "xref\n0 0\n0000000001 00000 n \ntrailer\n<< /Size 1 >>\nstartxref\n0\n%%EOF\n";
 
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Unexpected entry for xref');
-        (new XRef14Parser)->parse($buffer, 0);
+        $result = (new XRef14Parser)->parse($buffer, 0);
+
+        self::assertSame([], $result->table);
     }
 
-    public function test_parse_throws_for_non_zero_generation_in_in_use_entry(): void
+    public function test_parse_keeps_in_use_entry_with_non_zero_generation(): void
     {
         $buffer = "xref\n1 1\n0000000001 00001 n \ntrailer\n<< /Size 2 >>\nstartxref\n0\n%%EOF\n";
 
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Objects of non-zero generation are not supported.');
-        (new XRef14Parser)->parse($buffer, 0);
+        $result = (new XRef14Parser)->parse($buffer, 0);
+
+        self::assertSame(1, $result->table[1]);
     }
 
     public function test_parse_throws_when_prev_is_not_numeric(): void
@@ -114,12 +114,12 @@ final class XRef14ParserTest extends TestCase
         self::assertSame(10, $result->table[1]);
     }
 
-    public function test_parse_throws_when_section_has_no_valid_entries(): void
+    public function test_parse_accepts_section_without_valid_entries_when_header_exists(): void
     {
         $buffer = "xref\n0 1\nnot-an-entry\ntrailer\n<< /Size 1 >>\nstartxref\n0\n%%EOF\n";
 
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Malformed xref at position 0');
-        (new XRef14Parser)->parse($buffer, 0);
+        $result = (new XRef14Parser)->parse($buffer, 0);
+
+        self::assertSame([], $result->table);
     }
 }
