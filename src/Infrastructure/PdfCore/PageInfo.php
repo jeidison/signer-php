@@ -42,7 +42,7 @@ class PageInfo
             throw new PdfCoreStructureException('Could not resolve pages root from document catalog.');
         }
 
-        $this->pagesInfo = $this->getPageInfo($pages);
+        $this->pagesInfo = $this->getPageInfo($pages, null, []);
 
         return $this;
     }
@@ -51,7 +51,7 @@ class PageInfo
      * @param  array<int, mixed>|null  $inheritedSize
      * @return array<int, PageDescriptor>
      */
-    protected function getPageInfo(int $oid, ?array $inheritedSize = null): array
+    protected function getPageInfo(int $oid, ?array $inheritedSize = null, array $visitedOids = []): array
     {
         $object = $this->pdfDocument->getObject($oid);
         if ($object === null) {
@@ -79,8 +79,12 @@ class PageInfo
                     }
                 }
 
+                $visitedOids[$oid] = true;
                 foreach ($kids as $kid) {
-                    $descriptors = $this->getPageInfo((int) $kid, $currentSize);
+                    if (isset($visitedOids[(int) $kid])) {
+                        continue;
+                    }
+                    $descriptors = $this->getPageInfo((int) $kid, $currentSize, $visitedOids);
                     array_push($pageDescriptors, ...$descriptors);
                 }
 

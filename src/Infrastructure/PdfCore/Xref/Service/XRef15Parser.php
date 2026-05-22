@@ -12,7 +12,7 @@ use SignerPHP\Infrastructure\PdfCore\Xref\XrefParseResult;
 
 final class XRef15Parser
 {
-    public function parse(PdfDocument $pdfDocument, int $xrefPosition): XrefParseResult
+    public function parse(PdfDocument $pdfDocument, int $xrefPosition, array $visitedPositions = []): XrefParseResult
     {
         $xrefObject = $pdfDocument->findObjectAtOffset($xrefPosition);
 
@@ -43,6 +43,8 @@ final class XRef15Parser
             throw new PdfCoreStructureException('Invalid indexes of xref table');
         }
 
+        $visitedPositions[$xrefPosition] = true;
+
         $xrefTable = [];
         if (isset($xrefObject['Prev'])) {
             $prev = $xrefObject['Prev']->asIntOrNull();
@@ -50,7 +52,9 @@ final class XRef15Parser
                 throw new PdfCoreStructureException('Invalid reference to a previous xref table');
             }
 
-            $xrefTable = $this->parse($pdfDocument, $prev)->table;
+            if (! isset($visitedPositions[$prev])) {
+                $xrefTable = $this->parsePreviousTable($pdfDocument, $prev, $visitedPositions);
+            }
         }
 
         $reader = new StreamReader($stream);
@@ -94,9 +98,7 @@ final class XRef15Parser
 
                 return;
             case 1:
-                if ($fieldThree !== 0) {
-                    throw new PdfCoreStructureException('Objects of non-zero generation are not supported.');
-                }
+                // fieldThree is the generation number; non-zero is allowed (reused slot).
                 $xrefTable[$objectId] = $fieldTwo;
 
                 return;
@@ -126,5 +128,18 @@ final class XRef15Parser
         }
 
         return $value;
+    }
+
+    /** @return array<int, int|array{stmoid:int,pos:int}|null> */
+    private function parsePreviousTable(PdfDocument $pdfDocument, int $prev, array $visitedPositions): array
+    {
+        $raw = $pdfDocument->getBuffer()->raw();
+        $trimmed = ltrim(substr($raw, $prev, 64));
+
+        if (preg_match('/^\d+\s+\d+\s+obj\b/', $trimmed) === 1) {
+            return $this->parse($pdfDocument, $prev, $visitedPositions)->table;
+        }
+
+        return (new XRef14Parser)->parse($raw, $prev, $visitedPositions)->table;
     }
 }

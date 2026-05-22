@@ -42,7 +42,9 @@ final class ObjectStreamResolver
 
         $stream = $objstm->getStream(false);
         $index = substr((string) $stream, 0, $firstValue);
-        $index = explode(' ', trim($index));
+        // Split on any whitespace (tabs, multiple spaces, newlines) to tolerate
+        // non-conforming generators that don't use single spaces (ISO 32000 §7.5.7).
+        $index = preg_split('/\s+/', trim($index), -1, PREG_SPLIT_NO_EMPTY);
         $stream = substr((string) $stream, $firstValue);
 
         if (count($index) % 2 !== 0) {

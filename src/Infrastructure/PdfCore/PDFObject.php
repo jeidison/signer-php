@@ -240,7 +240,20 @@ endstream
         }
 
         if (isset($this->value['Filter'])) {
-            switch ($this->value['Filter']) {
+            // Normalise: some generators write Filter as a one-element array [/FlateDecode]
+            // instead of the plain name /FlateDecode (ISO 32000 §7.3.8.2).
+            $filterField = $this->value['Filter'];
+            $filterValues = $filterField->val(true);
+            $filterName = is_array($filterValues) && count($filterValues) === 1
+                ? (string) array_values($filterValues)[0]
+                : (string) $filterField;
+
+            // Re-add leading '/' if the filter value was stored without one.
+            if ($filterName !== '' && $filterName[0] !== '/') {
+                $filterName = '/'.$filterName;
+            }
+
+            switch ($filterName) {
                 case '/FlateDecode':
                     $DecodeParams = $this->value['DecodeParms'] ?? [];
                     $params = [
@@ -254,7 +267,7 @@ endstream
 
                     return self::flateDecode($inflated, $params);
                 default:
-                    throw new PdfCoreStructureException('Unknown compression method '.$this->value['Filter']);
+                    throw new PdfCoreStructureException('Unknown compression method '.$filterName);
             }
         }
 
