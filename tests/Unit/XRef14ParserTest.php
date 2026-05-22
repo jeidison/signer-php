@@ -32,6 +32,33 @@ final class XRef14ParserTest extends TestCase
         (new XRef14Parser)->parse($buffer, 0);
     }
 
+    public function test_parse_throws_when_trailer_tag_is_missing_after_xref(): void
+    {
+        $buffer = "xref\n0 1\n0000000010 00000 n \nstartxref\n0\n%%EOF\n";
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Trailer tag not found after xref at position 0');
+        (new XRef14Parser)->parse($buffer, 0);
+    }
+
+    public function test_parse_accepts_leading_blank_lines_before_xref_tag(): void
+    {
+        $buffer = "\n\r\nxref\n0 1\n0000000010 00000 n \ntrailer\n<< /Size 1 >>\nstartxref\n0\n%%EOF\n";
+
+        $result = (new XRef14Parser)->parse($buffer, 0);
+
+        self::assertSame(10, $result->table[0]);
+    }
+
+    public function test_parse_accepts_leading_whitespace_only_line_before_xref_tag(): void
+    {
+        $buffer = "   \nxref\n0 1\n0000000010 00000 n \ntrailer\n<< /Size 1 >>\nstartxref\n0\n%%EOF\n";
+
+        $result = (new XRef14Parser)->parse($buffer, 0);
+
+        self::assertSame(10, $result->table[0]);
+    }
+
     public function test_parse_throws_when_section_header_appears_before_consuming_entries(): void
     {
         $buffer = "xref\n0 2\n1 1\n0000000001 00000 n \ntrailer\n<< /Size 2 >>\nstartxref\n0\n%%EOF\n";
@@ -85,5 +112,14 @@ final class XRef14ParserTest extends TestCase
         $result = (new XRef14Parser)->parse($buffer, 0);
 
         self::assertSame(10, $result->table[1]);
+    }
+
+    public function test_parse_throws_when_section_has_no_valid_entries(): void
+    {
+        $buffer = "xref\n0 1\nnot-an-entry\ntrailer\n<< /Size 1 >>\nstartxref\n0\n%%EOF\n";
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Malformed xref at position 0');
+        (new XRef14Parser)->parse($buffer, 0);
     }
 }

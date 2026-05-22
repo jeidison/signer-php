@@ -8,6 +8,7 @@ use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreParsingException;
 use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
 use SignerPHP\Infrastructure\PdfCore\PdfDocument;
 use SignerPHP\Infrastructure\PdfCore\PDFObject;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValue;
 
 final class ObjectStreamResolver
 {
@@ -105,7 +106,7 @@ final class ObjectStreamResolver
                 throw new PdfCoreStructureException('Could not resolve stream length object '.$lengthObjectId.' for object '.$oid.'.');
             }
 
-            $length = $lengthObject->getValue()->asIntOrNull();
+            $length = $this->resolveLengthFromObject($pdfDocument, $lengthObject, [$lengthObjectId => true]);
         }
 
         if ($length === null || $length < 0) {
@@ -113,6 +114,60 @@ final class ObjectStreamResolver
         }
 
         $object->setStream(substr($buffer, $streamOffset, $length));
+    }
+
+    /**
+     * ISO 32000-1:2008 7.3.10: Resolve indirect /Length reference chain.
+     * Handles cases where /Length -> obj N -> intValue or /Length -> obj N -> obj M -> intValue.
+     *
+     * @param  array<int, bool>  $visitedObjectIds  cycle detection
+     */
+    private function resolveLengthFromObject(PdfDocument $pdfDocument, PDFObject $lengthObject, array $visitedObjectIds): ?int
+    {
+        $embeddedScalar = $this->extractEmbeddedScalarValue($lengthObject);
+        if ($embeddedScalar === null) {
+            return null;
+        }
+
+        $embeddedLength = $embeddedScalar->asIntOrNull();
+        if ($embeddedLength !== null) {
+            return $embeddedLength;
+        }
+
+        $nextObjectId = $embeddedScalar->asObjectReferenceOrNull();
+        if (! is_int($nextObjectId) || isset($visitedObjectIds[$nextObjectId])) {
+            return null;
+        }
+
+        $nextObject = $pdfDocument->findObject($nextObjectId);
+        if ($nextObject === null) {
+            return null;
+        }
+
+        $visitedObjectIds[$nextObjectId] = true;
+
+        return $this->resolveLengthFromObject($pdfDocument, $nextObject, $visitedObjectIds);
+    }
+
+    /**
+     * Extract scalar value from object containing only a single embedded value.
+     * Common in PDF length objects: "N 0 obj\n1234\nendobj" or "N 0 obj\n1 0 R\nendobj".
+     */
+    private function extractEmbeddedScalarValue(PDFObject $object): ?PDFValue
+    {
+        $keys = $object->getKeys();
+        if (count($keys) !== 1) {
+            return null;
+        }
+
+        $firstKey = $keys[0] ?? null;
+        if ($firstKey === null) {
+            return null;
+        }
+
+        $value = $object[$firstKey] ?? null;
+
+        return $value instanceof PDFValue ? $value : null;
     }
 
     private function resolveStreamStartOffset(string $buffer, int $offsetEnd): ?int
