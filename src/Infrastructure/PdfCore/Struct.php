@@ -65,16 +65,11 @@ class Struct
             $versions[] = intval($match[2][1]) + strlen($match[2][0]);
         }
 
-        $startXRefPos = strrpos($buffer, 'startxref');
-        if ($startXRefPos === false) {
+        $xrefPos = $this->resolveXrefPosition($buffer);
+
+        if ($xrefPos === null) {
             throw new Exception('startxref not found');
         }
-
-        if (preg_match('/startxref\s*([0-9]+)\s*%%EOF\s*$/ms', $buffer, $matches, 0, $startXRefPos) !== 1) {
-            throw new Exception('startxref and %%EOF not found');
-        }
-
-        $xrefPos = intval($matches[1]);
 
         if ($xrefPos === 0) {
             return new ParsedDocumentStructure(
@@ -100,5 +95,62 @@ class Struct
             xrefVersion: $xref->minimumPdfVersion,
             revisions: $versions,
         );
+    }
+
+    /**
+     * Resolve the xref table position from the PDF buffer.
+     *
+     * Strategy (in order):
+     *  1. Parse `startxref <offset> %%EOF` (ISO 32000 §7.5.5, strict form).
+     *  2. Parse `startxref <offset>` without `%%EOF` (lenient -- handles truncated trailers).
+     *  3. Scan backward from EOF for the last standalone `xref` keyword
+     *     (handles PDFs where `startxref` is absent or carries no valid offset).
+     *
+     * Returns null only when all three strategies yield nothing, allowing callers
+     * to throw a meaningful exception.
+     */
+    private function resolveXrefPosition(string $buffer): ?int
+    {
+        $startXRefPos = strrpos($buffer, 'startxref');
+
+        if ($startXRefPos !== false) {
+            // Strict form: startxref <offset> %%EOF
+            if (preg_match('/startxref\s*([0-9]+)\s*%%EOF\s*$/ms', $buffer, $matches, 0, $startXRefPos) === 1) {
+                return intval($matches[1]);
+            }
+
+            // Lenient form: startxref <offset> (no %%EOF -- truncated or malformed trailer)
+            if (preg_match('/startxref\s*([0-9]+)/ms', $buffer, $matches, 0, $startXRefPos) === 1) {
+                return intval($matches[1]);
+            }
+        }
+
+        // Last resort: no valid startxref offset found. Scan backward for the last
+        // standalone 'xref' keyword so we can locate the xref table directly.
+        return $this->findLastStandaloneXref($buffer);
+    }
+
+    /**
+     * Scan backward from EOF for the last standalone `xref` keyword (preceded by a newline).
+     * Also handles `xref` at the very start of the buffer (no preceding newline).
+     * Returns the byte offset of the `x` in `xref`, or null if not found.
+     */
+    private function findLastStandaloneXref(string $buffer): ?int
+    {
+        foreach (["\nxref\n", "\nxref\r\n", "\r\nxref\n", "\r\nxref\r\n"] as $needle) {
+            $pos = strrpos($buffer, $needle);
+            if ($pos !== false) {
+                return $pos + 1; // skip the leading newline; point at 'x'
+            }
+        }
+
+        // Also handle 'xref' at the very start of the buffer (no preceding newline).
+        foreach (["xref\n", "xref\r\n"] as $needle) {
+            if (str_starts_with($buffer, $needle)) {
+                return 0;
+            }
+        }
+
+        return null;
     }
 }

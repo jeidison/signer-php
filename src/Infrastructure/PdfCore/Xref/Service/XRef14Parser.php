@@ -19,7 +19,13 @@ final class XRef14Parser
     public function parse(string $buffer, int $xrefPosition, array $visitedPositions = []): XrefParseResult
     {
         if ($xrefPosition > strlen($buffer)) {
-            throw new PdfCoreParsingException('Xref position '.$xrefPosition.' is beyond end of file');
+            // Reported offset is beyond EOF (stale/wrong startxref value).
+            // Scan backward from the end of the file for the last standalone 'xref' table.
+            $fallback = $this->findLastXrefByScanning($buffer);
+            if ($fallback === null) {
+                throw new PdfCoreParsingException('Xref position '.$xrefPosition.' is beyond end of file');
+            }
+            $xrefPosition = $fallback;
         }
 
         $trailerPosition = strpos($buffer, 'trailer', $xrefPosition);
@@ -28,7 +34,13 @@ final class XRef14Parser
         }
 
         $version = '1.4';
-        $xrefText = substr($buffer, $xrefPosition, $trailerPosition - $xrefPosition);
+
+        // Expand the window up to 512 bytes before $xrefPosition to handle generators
+        // that emit a startxref offset pointing into the middle of the xref table
+        // (e.g. past the 'xref' keyword line). The parseEntries scanner strips everything
+        // before the first 'xref' keyword it finds, so the extra prefix is harmless.
+        $expandedStart = max(0, $xrefPosition - 512);
+        $xrefText = substr($buffer, $expandedStart, $trailerPosition - $expandedStart);
         $xrefTable = $this->parseEntries($xrefText, $xrefPosition);
 
         $trailer = Trailer::new()
@@ -139,6 +151,30 @@ final class XRef14Parser
             // We store the entry by offset; the generation field is not used by the signer.
             $xrefTable[$objectId] = $offset;
         }
+    }
+
+    /**
+     * Scan backward from the end of the file for the last standalone `xref` keyword
+     * (preceded by a newline). Used when the startxref offset is stale/beyond EOF.
+     * Returns the byte offset of the `x` in `xref`, or null if not found.
+     */
+    private function findLastXrefByScanning(string $buffer): ?int
+    {
+        foreach (["\nxref\n", "\nxref\r\n", "\r\nxref\n", "\r\nxref\r\n"] as $needle) {
+            $pos = strrpos($buffer, $needle);
+            if ($pos !== false) {
+                return $pos + 1; // skip the leading newline; point at 'x'
+            }
+        }
+
+        // Also handle 'xref' at the very start of the buffer (no preceding newline).
+        foreach (["xref\n", "xref\r\n"] as $needle) {
+            if (str_starts_with($buffer, $needle)) {
+                return 0;
+            }
+        }
+
+        return null;
     }
 
     /**

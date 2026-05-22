@@ -189,12 +189,14 @@ endstream
     }
 
     /**
-     * Decompress FlateDecode stream by format-aware detection (RFC 1950, 1951, 1952).
+     * Decompress FlateDecode stream using a waterfall of RFC 1950/1951/1952 methods.
      *
      * ISO 32000 mandates zlib (RFC 1950), but non-conforming generators produce raw deflate
-     * (RFC 1951) or gzip (RFC 1952). Each format has a deterministic byte signature:
-     * gzip (0x1F 0x8B) → gzdecode(), zlib (CMF header checksum) → gzuncompress(),
-     * everything else → gzinflate(). This avoids blind trial-and-error.
+     * (RFC 1951) or gzip (RFC 1952). We detect the most likely format from the header bytes
+     * and try that first, then fall through to the remaining methods before giving up.
+     * This handles cases where the header passes a format check but the data decompresses
+     * correctly with a different codec (e.g. zlib header bytes coincidentally valid but
+     * the payload is raw deflate).
      *
      * @throws PdfCoreParsingException
      */
@@ -203,28 +205,22 @@ endstream
         $b0 = strlen($stream) > 1 ? ord($stream[0]) : -1;
         $b1 = strlen($stream) > 1 ? ord($stream[1]) : -1;
 
-        // Gzip: magic bytes 0x1F 0x8B (RFC 1952).
+        // Gzip: magic bytes 0x1F 0x8B (RFC 1952). Try first when headers match.
         if ($b0 === 0x1F && $b1 === 0x8B) {
             $inflated = @gzdecode($stream);
             if (is_string($inflated)) {
                 return $inflated;
             }
-
-            throw new PdfCoreParsingException('Failed to inflate FlateDecode stream.');
+            // Fall through — misdetected gzip header; try other codecs below.
         }
 
-        // zlib: CMF+FLG header where (CMF*256+FLG) % 31 === 0 and CM (lower 4
-        // bits of CMF) === 8 (deflate). (RFC 1950)
-        if ($b0 !== -1 && ($b0 & 0x0F) === 8 && ($b0 * 256 + $b1) % 31 === 0) {
-            $inflated = @gzuncompress($stream);
-            if (is_string($inflated)) {
-                return $inflated;
-            }
-
-            throw new PdfCoreParsingException('Failed to inflate FlateDecode stream.');
+        // zlib (RFC 1950): works for conforming PDF generators and some edge cases.
+        $inflated = @gzuncompress($stream);
+        if (is_string($inflated)) {
+            return $inflated;
         }
 
-        // Raw deflate (RFC 1951): no wrapper header.
+        // Raw deflate (RFC 1951): no wrapper header; fallback for non-conforming generators.
         $inflated = @gzinflate($stream);
         if (is_string($inflated)) {
             return $inflated;
