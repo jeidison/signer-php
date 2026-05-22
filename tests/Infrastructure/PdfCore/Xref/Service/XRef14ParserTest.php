@@ -71,16 +71,34 @@ final class XRef14ParserTest extends TestCase
                 0,
                 15,
             ],
+            'xref position beyond EOF recovered by backward scan' => [
+                // startxref offset is stale/too large; backward scan locates the real xref table.
+                "xref\n0 1\n0000000010 00000 n \ntrailer\n<< /Size 1 >>\nstartxref\n99999\n%%EOF\n",
+                99999,
+                0,
+                10,
+            ],
+            'startxref offset points past xref keyword into table body (backward expansion)' => [
+                // Offset 5 is inside the xref table (after the "xref\n" keyword line at 0).
+                // The backward-expanded window (max 512 bytes) covers position 0 and finds it.
+                "xref\n0 1\n0000000010 00000 n \ntrailer\n<< /Size 1 >>\nstartxref\n5\n%%EOF\n",
+                5,
+                0,
+                10,
+            ],
         ];
     }
 
     /** @return array<string, array{string, int, string}> */
     public static function parseFailureCases(): array
     {
-        $validBuffer = "xref\n0 1\n0000000010 00000 n \ntrailer\n<< /Size 1 >>\n";
-
         return [
-            'xref position beyond end of file' => [$validBuffer, strlen($validBuffer) + 1, 'beyond end of file'],
+            'xref position beyond EOF and no xref table in buffer' => [
+                // No 'xref' keyword at all → backward scan finds nothing → throws.
+                "%PDF-1.4\nno xref content here\ntrailer\n<< /Size 1 >>\n",
+                9999,
+                'beyond end of file',
+            ],
             'xref tag missing at provided position' => [
                 "no-tag-here\ntrailer\n<< /Size 1 >>\nstartxref\n0\n%%EOF\n",
                 0,
