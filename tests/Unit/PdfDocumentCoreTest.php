@@ -15,6 +15,8 @@ final class PdfDocumentCoreTest extends TestCase
     public function test_getters_and_setters_roundtrip_core_state(): void
     {
         $document = new PdfDocument;
+        self::assertFalse($document->hasBuffer());
+
         $document->setPdfVersion('PDF-1.4');
         $document->setTrailerObject(new PDFValueObject(['Size' => 1]));
         $document->setXrefPosition(123);
@@ -30,6 +32,7 @@ final class PdfDocumentCoreTest extends TestCase
         self::assertSame([1 => 0], $document->getXrefTable());
         self::assertSame('1.4', $document->getXrefTableVersion());
         self::assertSame([10, 20], $document->getRevisions());
+        self::assertTrue($document->hasBuffer());
         self::assertSame('abc', $document->getBuffer()->raw());
         self::assertSame(7, $document->getMaxOid());
         self::assertCount(1, $document->getPdfObjects());
@@ -178,7 +181,7 @@ final class PdfDocumentCoreTest extends TestCase
         self::assertNotNull($infoObject['ModDate']);
     }
 
-    public function test_update_modify_date_throws_when_info_reference_targets_missing_object(): void
+    public function test_update_modify_date_replaces_stale_info_reference_with_new_info_object(): void
     {
         $document = new PdfDocument;
         $document->setTrailerObject(new PDFValueObject([
@@ -189,10 +192,21 @@ final class PdfDocumentCoreTest extends TestCase
             'Type' => '/Catalog',
         ]));
 
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Invalid info object');
+        $result = $document->updateModifyDate(new \DateTime('2024-01-02T03:04:05+00:00'));
 
-        $document->updateModifyDate(new \DateTime('2024-01-02T03:04:05+00:00'));
+        self::assertTrue($result);
+
+        $infoReference = $document->getTrailerObject()['Info'];
+        self::assertNotNull($infoReference);
+        $newInfoOid = $infoReference->asObjectReferenceOrNull();
+        self::assertIsInt($newInfoOid);
+        self::assertNotSame(999, $newInfoOid);
+
+        $infoObject = $document->getObject($newInfoOid);
+        self::assertNotNull($infoObject);
+        self::assertSame('(Modifier with PHP Signer)', (string) $infoObject['Producer']);
+        self::assertNotNull($infoObject['CreationDate']);
+        self::assertNotNull($infoObject['ModDate']);
     }
 
     public function test_find_object_at_offset_decompresses_flatedecode_xref_stream(): void
