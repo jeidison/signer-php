@@ -202,28 +202,46 @@ endstream
      */
     private static function inflateFlateStream(string $stream): string
     {
-        $b0 = strlen($stream) > 1 ? ord($stream[0]) : -1;
-        $b1 = strlen($stream) > 1 ? ord($stream[1]) : -1;
+        $attemptInflate = static function (string $candidate): ?string {
+            $b0 = strlen($candidate) > 1 ? ord($candidate[0]) : -1;
+            $b1 = strlen($candidate) > 1 ? ord($candidate[1]) : -1;
 
-        // Gzip: magic bytes 0x1F 0x8B (RFC 1952). Try first when headers match.
-        if ($b0 === 0x1F && $b1 === 0x8B) {
-            $inflated = @gzdecode($stream);
+            // Gzip: magic bytes 0x1F 0x8B (RFC 1952). Try first when headers match.
+            if ($b0 === 0x1F && $b1 === 0x8B) {
+                $inflated = @gzdecode($candidate);
+                if (is_string($inflated)) {
+                    return $inflated;
+                }
+                // Fall through — misdetected gzip header; try other codecs below.
+            }
+
+            // zlib (RFC 1950): works for conforming PDF generators and some edge cases.
+            $inflated = @gzuncompress($candidate);
             if (is_string($inflated)) {
                 return $inflated;
             }
-            // Fall through — misdetected gzip header; try other codecs below.
-        }
 
-        // zlib (RFC 1950): works for conforming PDF generators and some edge cases.
-        $inflated = @gzuncompress($stream);
+            // Raw deflate (RFC 1951): no wrapper header; fallback for non-conforming generators.
+            $inflated = @gzinflate($candidate);
+            if (is_string($inflated)) {
+                return $inflated;
+            }
+
+            return null;
+        };
+
+        $inflated = $attemptInflate($stream);
         if (is_string($inflated)) {
             return $inflated;
         }
 
-        // Raw deflate (RFC 1951): no wrapper header; fallback for non-conforming generators.
-        $inflated = @gzinflate($stream);
-        if (is_string($inflated)) {
-            return $inflated;
+        // Non-conforming PDFs may leak one or more leading bytes before the compressed payload.
+        $trimmed = ltrim($stream, "\x00\x09\x0A\x0C\x0D\x20");
+        if ($trimmed !== $stream) {
+            $inflated = $attemptInflate($trimmed);
+            if (is_string($inflated)) {
+                return $inflated;
+            }
         }
 
         throw new PdfCoreParsingException('Failed to inflate FlateDecode stream.');

@@ -40,6 +40,18 @@ final class XRef14ParserTest extends TestCase
     /** @return array<string, array{string, int, int, int|null}> */
     public static function parseSuccessCases(): array
     {
+        $longXrefEntries = '';
+        for ($i = 0; $i < 80; $i++) {
+            $longXrefEntries .= sprintf("%010d 00000 n \n", 10 + $i);
+        }
+
+        $longXrefTable = "xref\n0 80\n".$longXrefEntries;
+        $longXrefBuffer = $longXrefTable."trailer\n<< /Size 80 >>\nstartxref\n0\n%%EOF\n";
+        $longXrefPositionInsideBody = strpos($longXrefBuffer, '0000000079 00000 n');
+        if ($longXrefPositionInsideBody === false) {
+            throw new \RuntimeException('Failed to build long xref regression fixture.');
+        }
+
         return [
             'prefixed chunk ending with xref keyword' => [
                 "endobj xref\n0 1\n0000000010 00000 n \ntrailer\n<< /Size 1 >>\nstartxref\n0\n%%EOF\n",
@@ -78,6 +90,14 @@ final class XRef14ParserTest extends TestCase
                 0,
                 10,
             ],
+            'xref position beyond EOF recovered by newline-prefixed scan marker' => [
+                // Synthetic fixture from malformed corpus: xref is preceded by a newline and
+                // fallback must return the position after that newline (pos + 1).
+                "%PDF-1.4\nxref\n0 1\n0000000010 00000 n \ntrailer\n<< /Size 1 >>\nstartxref\n99999\n%%EOF\n",
+                99999,
+                0,
+                10,
+            ],
             'startxref offset points past xref keyword into table body (backward expansion)' => [
                 // Offset 5 is inside the xref table (after the "xref\n" keyword line at 0).
                 // The backward-expanded window (max 512 bytes) covers position 0 and finds it.
@@ -85,6 +105,14 @@ final class XRef14ParserTest extends TestCase
                 5,
                 0,
                 10,
+            ],
+            'startxref offset deep inside long xref table is recovered by fallback scan' => [
+                // Regression from corpus: startxref may point into a large xref body far from the
+                // keyword. The parser must still resolve the correct table header.
+                $longXrefBuffer,
+                $longXrefPositionInsideBody,
+                79,
+                89,
             ],
         ];
     }
@@ -101,6 +129,21 @@ final class XRef14ParserTest extends TestCase
             ],
             'xref tag missing at provided position' => [
                 "no-tag-here\ntrailer\n<< /Size 1 >>\nstartxref\n0\n%%EOF\n",
+                0,
+                'Xref tag not found at position 0',
+            ],
+            'malformed xref rethrows without fallback retry' => [
+                // Synthetic fixture from problematic PDFs: xref section contains no valid header.
+                // parseEntries throws "Malformed xref...", and the catch block must rethrow
+                // immediately (non "Xref tag not found" message).
+                "xref\nnot-a-section-or-entry\ntrailer\n<< /Size 1 >>\nstartxref\n0\n%%EOF\n",
+                0,
+                'Malformed xref at position 0',
+            ],
+            'fallback retry with trailer at zero cannot scan before offset' => [
+                // Trailer at position 0 makes findLastStandaloneXrefBefore receive beforeOffset=0,
+                // which returns null and rethrows the original xref-tag-not-found error.
+                "trailer\n<< /Size 1 >>\nstartxref\n0\n%%EOF\n",
                 0,
                 'Xref tag not found at position 0',
             ],

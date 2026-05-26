@@ -34,4 +34,16 @@ final class PdfObjectReaderTest extends TestCase
         self::assertSame('XRef', $object['Type']->val());
         self::assertGreaterThan(0, $offsetEnd);
     }
+
+    public function test_object_from_buffer_throws_parsing_exception_when_offset_is_beyond_buffer(): void
+    {
+        $reader = new PdfObjectReader;
+        $buffer = "1 0 obj\n<< /Type /Catalog >>\nendobj\n";
+
+        $this->expectException(\SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreParsingException::class);
+        $this->expectExceptionMessage('Invalid object definition: 1');
+
+        $offsetEnd = 0;
+        $reader->objectFromBuffer($buffer, 1, strlen($buffer) + 10, $offsetEnd);
+    }
 }

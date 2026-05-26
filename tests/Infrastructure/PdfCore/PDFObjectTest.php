@@ -67,4 +67,17 @@ final class PDFObjectTest extends TestCase
 
         $object->getStream(false);
     }
+
+    public function test_get_stream_decodes_flate_stream_with_leading_whitespace_prefix(): void
+    {
+        // Regression pattern from corpus: some malformed files include an extra whitespace
+        // byte before a valid Flate payload.
+        $payload = gzcompress('hello world');
+        self::assertIsString($payload);
+
+        $object = new PDFObject(1, ['Filter' => new PDFValueSimple('/FlateDecode')]);
+        $object->setStream("\n".$payload);
+
+        self::assertSame('hello world', $object->getStream(false));
+    }
 }

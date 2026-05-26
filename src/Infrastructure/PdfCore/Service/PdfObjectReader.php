@@ -13,7 +13,11 @@ final class PdfObjectReader
 {
     public function objectFromBuffer(string $buffer, int|string|null $expectedObjId, int $offset = 0, int &$offsetEnd = 0): PDFObject
     {
-        $headerMatchedAt = strpos($buffer, 'obj', $offset);
+        $bufferLength = strlen($buffer);
+        if ($offset < 0 || $offset >= $bufferLength) {
+            throw new PdfCoreParsingException('Invalid object definition: '.$expectedObjId);
+        }
+
         if (preg_match('/(\d+)\s+(\d+)\s+obj/ms', $buffer, $matches, PREG_OFFSET_CAPTURE, $offset) !== 1) {
             throw new PdfCoreParsingException('Invalid object definition: '.$expectedObjId);
         }
