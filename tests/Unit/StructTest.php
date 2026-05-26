@@ -260,4 +260,123 @@ final class StructTest extends TestCase
         self::assertSame($offsetObj2, $structure->xrefTable[2]);
         self::assertSame($offsetObj3, $structure->xrefTable[3]);
     }
+
+    public function test_parse_throws_when_startxref_is_missing_and_trailer_is_invalid(): void
+    {
+        $pdf = "%PDF-1.4\n"
+            ."trailer\n<< /Root [ >>\n"
+            ."%%EOF\n";
+
+        $document = new PdfDocument;
+        $document->setBufferFromString($pdf);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('startxref not found');
+
+        Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+    }
+
+    public function test_parse_throws_when_startxref_is_missing_and_trailer_has_no_objects(): void
+    {
+        $pdf = "%PDF-1.4\n"
+            ."trailer\n<< /Root 1 0 R /Size 1 >>\n%%EOF\n";
+
+        $document = new PdfDocument;
+        $document->setBufferFromString($pdf);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('startxref not found');
+
+        Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+    }
+
+    public function test_parse_throws_when_synthetic_root_reference_is_zero_object(): void
+    {
+        $pdf = "%PDF-1.7\n"
+            ."0 0 obj <</Root 0 0 R>>\nendobj\n";
+
+        $document = new PdfDocument;
+        $document->setBufferFromString($pdf);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('startxref not found');
+
+        Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+    }
+
+    public function test_parse_throws_when_synthetic_root_reference_exceeds_int_range(): void
+    {
+        $overflowRoot = str_repeat('9', strlen((string) PHP_INT_MAX) + 1);
+        $pdf = "%PDF-1.7\n"
+            ."1 0 obj <</Root {$overflowRoot} 0 R>>\nendobj\n";
+
+        $document = new PdfDocument;
+        $document->setBufferFromString($pdf);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('startxref not found');
+
+        Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+    }
+
+    public function test_parse_skips_object_zero_in_synthetic_xref_recovery(): void
+    {
+        $pdf = "%PDF-1.4\n"
+            ."0 0 obj\n<< /Type /Ignored >>\nendobj\n"
+            ."1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+            ."2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n"
+            ."trailer\n<< /Root 1 0 R /Size 3 >>\n%%EOF\n";
+
+        $document = new PdfDocument;
+        $document->setBufferFromString($pdf);
+
+        $structure = Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+
+        self::assertArrayNotHasKey(0, $structure->xrefTable);
+        self::assertArrayHasKey(1, $structure->xrefTable);
+        self::assertArrayHasKey(2, $structure->xrefTable);
+    }
+
+    public function test_parse_throws_when_synthetic_root_has_same_length_but_is_greater_than_int_max(): void
+    {
+        $max = (string) PHP_INT_MAX;
+        $lastDigit = (int) substr($max, -1);
+        if ($lastDigit === 9) {
+            self::markTestSkipped('Cannot create same-length overflow value ending with digit 9.');
+        }
+
+        $sameLengthOverflow = substr($max, 0, -1).(string) ($lastDigit + 1);
+        $pdf = "%PDF-1.7\n"
+            ."1 0 obj <</Root {$sameLengthOverflow} 0 R>>\nendobj\n";
+
+        $document = new PdfDocument;
+        $document->setBufferFromString($pdf);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('startxref not found');
+
+        Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+    }
+
+    public function test_parse_positive_int_within_range_returns_null_for_non_digit_values(): void
+    {
+        $method = new \ReflectionMethod(Struct::class, 'parsePositiveIntWithinRange');
+        $method->setAccessible(true);
+
+        $result = $method->invoke(Struct::new(), 'abc');
+
+        self::assertNull($result);
+    }
 }
