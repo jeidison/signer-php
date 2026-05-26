@@ -134,9 +134,19 @@ final class XRef15Parser
     private function parsePreviousTable(PdfDocument $pdfDocument, int $prev, array $visitedPositions): array
     {
         $raw = $pdfDocument->getBuffer()->raw();
-        $trimmed = ltrim(substr($raw, $prev, 64));
+        $trimmed = ltrim(substr($raw, $prev, 256));
 
-        if (preg_match('/^\d+\s+\d+\s+obj\b/', $trimmed) === 1) {
+        if (preg_match('/^xref\b/', $trimmed) === 1) {
+            return (new XRef14Parser)->parse($raw, $prev, $visitedPositions)->table;
+        }
+
+        if (preg_match('/^(\d+\s+\d+\s+obj\b)(.*)$/s', $trimmed, $matches) === 1) {
+            $afterObjectHeader = ltrim((string) ($matches[2] ?? ''));
+
+            if (preg_match('/^xref\b/', $afterObjectHeader) === 1) {
+                return (new XRef14Parser)->parse($raw, $prev, $visitedPositions)->table;
+            }
+
             return $this->parse($pdfDocument, $prev, $visitedPositions)->table;
         }
 

@@ -74,6 +74,11 @@ class Struct
         }
 
         if ($xrefPos === 0) {
+            $recovered = $this->recoverStructureWithoutXref($buffer, $pdfVersion, $versions);
+            if ($recovered !== null) {
+                return $recovered;
+            }
+
             return new ParsedDocumentStructure(
                 trailer: null,
                 version: $pdfVersion,
@@ -331,7 +336,7 @@ class Struct
 
     private function resolvePdfVersion(string $buffer): ?string
     {
-        $headerWindow = substr($buffer, 0, 8192);
+        $headerWindow = substr($buffer, 0, 65536);
         if (preg_match('/%PDF-([^\s]+)/', $headerWindow, $matches) === 1) {
             $normalized = $this->normalizeMalformedPdfVersionToken((string) $matches[1]);
             if ($normalized !== null) {
@@ -339,11 +344,33 @@ class Struct
             }
         }
 
+        $metaVersion = $this->extractVersionFromProducerMetadata($buffer);
+        if ($metaVersion !== null) {
+            return $metaVersion;
+        }
+
         if ($this->looksLikePdfStructure($buffer)) {
             return 'PDF-1.4';
         }
 
         return null;
+    }
+
+    private function extractVersionFromProducerMetadata(string $buffer): ?string
+    {
+        if (preg_match('/\/(?:Producer|Creator)\s*\(([^)]+)\)/', $buffer, $matches) !== 1) {
+            return null;
+        }
+
+        $metadataValue = $matches[1];
+
+        if (preg_match('/PDF[- ](\d+\.\d+)/', $metadataValue, $versionMatches) !== 1) {
+            return null;
+        }
+
+        $normalized = $this->normalizeMalformedPdfVersionToken($versionMatches[1]);
+
+        return $normalized !== null ? 'PDF-'.$normalized : null;
     }
 
     private function normalizeMalformedPdfVersionToken(string $token): ?string

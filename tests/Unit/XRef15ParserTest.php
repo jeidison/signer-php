@@ -162,7 +162,8 @@ final class XRef15ParserTest extends TestCase
             ."xref\n0 2\n"
             ."0000000000 65535 f\n"
             ."0000000060 00000 n\n"
-            ."trailer << /Size 2 /Root 1 0 R >>\n";
+            ."trailer << /Size 2 /Root 1 0 R >>\n"
+            ."startxref\n0\n%%EOF\n";
 
         $prevPosition = 0; // /Prev points here (starts with `1 0 obj`)
 
@@ -175,7 +176,7 @@ final class XRef15ParserTest extends TestCase
         );
         $currentObject['Prev'] = $prevPosition;
 
-        // The document stub: objectFromString() throws for offset 0 (not a real xref stream)
+        // The document stub: offset 0 is not a real xref stream object.
         $document = new class($currentObject, $classicXrefBuffer) extends PdfDocument {
             public function __construct(
                 private readonly PDFObject $current,
@@ -195,6 +196,10 @@ final class XRef15ParserTest extends TestCase
 
             public function findObjectAtOffset(int $objectOffset, ?int $expectedOid = null): PDFObject
             {
+                if ($objectOffset === 0) {
+                    throw new \Exception('Not a valid xref stream object at offset 0');
+                }
+
                 return $this->current;
             }
         };
