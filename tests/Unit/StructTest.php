@@ -148,4 +148,33 @@ final class StructTest extends TestCase
         self::assertSame(0, $structure->xrefPosition);
         self::assertSame([], $structure->xrefTable);
     }
+
+    public function test_parse_recovers_xref_stream_position_when_startxref_is_missing(): void
+    {
+        // Regression fixture: malformed file has no startxref section, but does contain
+        // a valid xref stream object that should be discovered by fallback scanning.
+        $xrefStreamData = chr(1).pack('n', 0).chr(0)
+            .chr(1).pack('n', 9).chr(0);
+        $xrefLength = strlen($xrefStreamData);
+
+        $xrefObject = "5 0 obj\n<< /Type /XRef /W [1 2 1] /Size 2 /Index [0 2] /Length {$xrefLength} >>\nstream\n"
+            .$xrefStreamData
+            ."\nendstream\nendobj\n";
+        $pdf = "%PDF-1.5\n1 0 obj\n<< /Type /Catalog >>\nendobj\n".$xrefObject."%%EOF\n";
+        $xrefOffset = strpos($pdf, '5 0 obj');
+        if ($xrefOffset === false) {
+            self::fail('Could not build xref stream fixture.');
+        }
+
+        $document = new PdfDocument;
+        $document->setBufferFromString($pdf);
+
+        $structure = Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+
+        self::assertSame('PDF-1.5', $structure->version);
+        self::assertSame($xrefOffset, $structure->xrefPosition);
+        self::assertSame(9, $structure->xrefTable[1]);
+    }
 }

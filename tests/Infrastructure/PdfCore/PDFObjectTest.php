@@ -80,4 +80,64 @@ final class PDFObjectTest extends TestCase
 
         self::assertSame('hello world', $object->getStream(false));
     }
+
+    public function test_get_stream_decodes_flate_stream_with_non_whitespace_prefix(): void
+    {
+        // Regression pattern from corpus: some inputs prepend non-whitespace bytes
+        // before a valid compressed Flate payload.
+        $payload = gzcompress('hello world');
+        self::assertIsString($payload);
+
+        $object = new PDFObject(1, ['Filter' => new PDFValueSimple('/FlateDecode')]);
+        $object->setStream('XX'.$payload);
+
+        self::assertSame('hello world', $object->getStream(false));
+    }
+
+    public function test_get_stream_decodes_ascii85_then_flate_filter_chain(): void
+    {
+        $flatePayload = gzcompress('hello world');
+        self::assertIsString($flatePayload);
+
+        $object = new PDFObject(1, [
+            'Filter' => new PDFValueList([
+                new PDFValueSimple('ASCII85Decode'),
+                new PDFValueSimple('FlateDecode'),
+            ]),
+        ]);
+        $object->setStream(self::ascii85Encode($flatePayload));
+
+        self::assertSame('hello world', $object->getStream(false));
+    }
+
+    private static function ascii85Encode(string $data): string
+    {
+        $out = '';
+        $length = strlen($data);
+
+        for ($i = 0; $i < $length; $i += 4) {
+            $chunk = substr($data, $i, 4);
+            $chunkLength = strlen($chunk);
+            if ($chunkLength < 4) {
+                $chunk = str_pad($chunk, 4, "\0", STR_PAD_RIGHT);
+            }
+
+            $value = unpack('N', $chunk)[1];
+            if ($chunkLength === 4 && $value === 0) {
+                $out .= 'z';
+
+                continue;
+            }
+
+            $encoded = '';
+            for ($j = 0; $j < 5; $j++) {
+                $encoded = chr(($value % 85) + 33).$encoded;
+                $value = intdiv($value, 85);
+            }
+
+            $out .= $chunkLength < 4 ? substr($encoded, 0, $chunkLength + 1) : $encoded;
+        }
+
+        return '<~'.$out.'~>';
+    }
 }

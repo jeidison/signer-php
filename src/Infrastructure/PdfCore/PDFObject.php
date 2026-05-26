@@ -244,7 +244,120 @@ endstream
             }
         }
 
+        // Additional hardening: attempt to recover when arbitrary non-whitespace bytes
+        // precede a valid compressed payload (seen in malformed corpus fixtures).
+        $maxSkip = min(64, max(0, strlen($stream) - 2));
+        for ($skip = 1; $skip <= $maxSkip; $skip++) {
+            $inflated = $attemptInflate(substr($stream, $skip));
+            if (is_string($inflated)) {
+                return $inflated;
+            }
+        }
+
         throw new PdfCoreParsingException('Failed to inflate FlateDecode stream.');
+    }
+
+    /**
+     * Decode an ASCII85 (Base85) stream into binary bytes.
+     *
+     * @throws PdfCoreParsingException
+     */
+    private static function ascii85DecodeStream(string $stream): string
+    {
+        $stream = trim($stream);
+        if (str_starts_with($stream, '<~') && str_ends_with($stream, '~>')) {
+            $stream = substr($stream, 2, -2);
+        }
+
+        $stream = preg_replace('/\s+/', '', $stream);
+        if (! is_string($stream)) {
+            throw new PdfCoreParsingException('Invalid ASCII85 stream data.');
+        }
+
+        $out = '';
+        $tuple = [];
+        $length = strlen($stream);
+
+        for ($i = 0; $i < $length; $i++) {
+            $ch = $stream[$i];
+
+            if ($ch === 'z') {
+                if ($tuple !== []) {
+                    throw new PdfCoreParsingException('Invalid ASCII85 stream data.');
+                }
+                $out .= "\0\0\0\0";
+
+                continue;
+            }
+
+            $ord = ord($ch);
+            if ($ord < 33 || $ord > 117) {
+                throw new PdfCoreParsingException('Invalid ASCII85 stream data.');
+            }
+
+            $tuple[] = $ord - 33;
+            if (count($tuple) === 5) {
+                $value = 0;
+                foreach ($tuple as $digit) {
+                    $value = ($value * 85) + $digit;
+                }
+                $out .= pack('N', $value);
+                $tuple = [];
+            }
+        }
+
+        if ($tuple !== []) {
+            $originalCount = count($tuple);
+            while (count($tuple) < 5) {
+                $tuple[] = 84;
+            }
+
+            $value = 0;
+            foreach ($tuple as $digit) {
+                $value = ($value * 85) + $digit;
+            }
+
+            $out .= substr(pack('N', $value), 0, $originalCount - 1);
+        }
+
+        return $out;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function normalizeFilters(mixed $filterField): array
+    {
+        $filters = [];
+
+        if (is_object($filterField) && method_exists($filterField, 'val')) {
+            $raw = $filterField->val(true);
+            if (is_array($raw)) {
+                foreach ($raw as $candidate) {
+                    $name = (string) $candidate;
+                    if ($name !== '' && $name[0] !== '/') {
+                        $name = '/'.$name;
+                    }
+                    $filters[] = $name;
+                }
+
+                return $filters;
+            }
+
+            $name = (string) $filterField;
+            if ($name !== '' && $name[0] !== '/') {
+                $name = '/'.$name;
+            }
+
+            return [$name];
+        }
+
+        $name = (string) $filterField;
+        if ($name !== '' && $name[0] !== '/') {
+            $name = '/'.$name;
+        }
+
+        return [$name];
     }
 
     public function getStream($raw = true): string
@@ -254,35 +367,34 @@ endstream
         }
 
         if (isset($this->value['Filter'])) {
-            // Normalise: some generators write Filter as a one-element array [/FlateDecode]
-            // instead of the plain name /FlateDecode (ISO 32000 §7.3.8.2).
-            $filterField = $this->value['Filter'];
-            $filterValues = $filterField->val(true);
-            $filterName = is_array($filterValues) && count($filterValues) === 1
-                ? (string) array_values($filterValues)[0]
-                : (string) $filterField;
+            $decoded = (string) $this->stream;
+            $filters = self::normalizeFilters($this->value['Filter']);
 
-            // Re-add leading '/' if the filter value was stored without one.
-            if ($filterName !== '' && $filterName[0] !== '/') {
-                $filterName = '/'.$filterName;
+            foreach ($filters as $filterName) {
+                switch ($filterName) {
+                    case '/ASCII85Decode':
+                        $decoded = self::ascii85DecodeStream($decoded);
+
+                        break;
+                    case '/FlateDecode':
+                        $DecodeParams = $this->value['DecodeParms'] ?? [];
+                        $params = [
+                            'Columns' => $DecodeParams['Columns'] ?? new PDFValueSimple(0),
+                            'Predictor' => $DecodeParams['Predictor'] ?? new PDFValueSimple(1),
+                            'BitsPerComponent' => $DecodeParams['BitsPerComponent'] ?? new PDFValueSimple(8),
+                            'Colors' => $DecodeParams['Colors'] ?? new PDFValueSimple(1),
+                        ];
+
+                        $inflated = self::inflateFlateStream($decoded);
+                        $decoded = self::flateDecode($inflated, $params);
+
+                        break;
+                    default:
+                        throw new PdfCoreStructureException('Unknown compression method '.$filterName);
+                }
             }
 
-            switch ($filterName) {
-                case '/FlateDecode':
-                    $DecodeParams = $this->value['DecodeParms'] ?? [];
-                    $params = [
-                        'Columns' => $DecodeParams['Columns'] ?? new PDFValueSimple(0),
-                        'Predictor' => $DecodeParams['Predictor'] ?? new PDFValueSimple(1),
-                        'BitsPerComponent' => $DecodeParams['BitsPerComponent'] ?? new PDFValueSimple(8),
-                        'Colors' => $DecodeParams['Colors'] ?? new PDFValueSimple(1),
-                    ];
-
-                    $inflated = self::inflateFlateStream((string) $this->stream);
-
-                    return self::flateDecode($inflated, $params);
-                default:
-                    throw new PdfCoreStructureException('Unknown compression method '.$filterName);
-            }
+            return $decoded;
         }
 
         return (string) $this->stream;
