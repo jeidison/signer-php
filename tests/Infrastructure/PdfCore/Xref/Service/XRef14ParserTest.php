@@ -40,6 +40,18 @@ final class XRef14ParserTest extends TestCase
     /** @return array<string, array{string, int, int, int|null}> */
     public static function parseSuccessCases(): array
     {
+        $longXrefEntries = '';
+        for ($i = 0; $i < 80; $i++) {
+            $longXrefEntries .= sprintf("%010d 00000 n \n", 10 + $i);
+        }
+
+        $longXrefTable = "xref\n0 80\n".$longXrefEntries;
+        $longXrefBuffer = $longXrefTable."trailer\n<< /Size 80 >>\nstartxref\n0\n%%EOF\n";
+        $longXrefPositionInsideBody = strpos($longXrefBuffer, '0000000079 00000 n');
+        if ($longXrefPositionInsideBody === false) {
+            throw new \RuntimeException('Failed to build long xref regression fixture.');
+        }
+
         return [
             'prefixed chunk ending with xref keyword' => [
                 "endobj xref\n0 1\n0000000010 00000 n \ntrailer\n<< /Size 1 >>\nstartxref\n0\n%%EOF\n",
@@ -85,6 +97,14 @@ final class XRef14ParserTest extends TestCase
                 5,
                 0,
                 10,
+            ],
+            'startxref offset deep inside long xref table is recovered by fallback scan' => [
+                // Regression from corpus: startxref may point into a large xref body far from the
+                // keyword. The parser must still resolve the correct table header.
+                $longXrefBuffer,
+                $longXrefPositionInsideBody,
+                79,
+                89,
             ],
         ];
     }
