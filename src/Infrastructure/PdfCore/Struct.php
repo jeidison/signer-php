@@ -240,7 +240,7 @@ class Struct
 
     private function extractSyntheticTrailerFromRootReference(string $buffer): ?PDFValue
     {
-        if (preg_match_all('/\/Root\s+(\d+)\s+(\d+)\s+R\b/', $buffer, $matches, PREG_SET_ORDER) === 0) {
+        if (preg_match_all('/\/Root\s+([^\s]+)\s+([^\s]+)\s+R\b/', $buffer, $matches, PREG_SET_ORDER) === 0) {
             return null;
         }
 
