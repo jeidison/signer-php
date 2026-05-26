@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SignerPHP\Tests\Infrastructure\PdfCore;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use SignerPHP\Infrastructure\PdfCore\PDFObject;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueList;
@@ -49,7 +50,7 @@ final class PDFObjectTest extends TestCase
     /**
      * @param  callable(): string  $buildStream
      */
-    #[\PHPUnit\Framework\Attributes\DataProvider('flateStreamEncodings')]
+    #[DataProvider('flateStreamEncodings')]
     public function test_get_stream_decodes_all_flate_encoding_variants(callable $buildStream, string $expected): void
     {
         $object = new PDFObject(1, ['Filter' => new PDFValueSimple('/FlateDecode')]);
@@ -122,7 +123,7 @@ final class PDFObjectTest extends TestCase
         ];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('invalidAscii85Payloads')]
+    #[DataProvider('invalidAscii85Payloads')]
     public function test_get_stream_throws_for_invalid_ascii85_payload(string $payload): void
     {
         $object = new PDFObject(1, ['Filter' => new PDFValueSimple('/ASCII85Decode')]);
