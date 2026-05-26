@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace SignerPHP\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreParsingException;
 use SignerPHP\Infrastructure\PdfCore\PageDescriptor;
 use SignerPHP\Infrastructure\PdfCore\PageInfo;
 use SignerPHP\Infrastructure\PdfCore\PdfDocument;
 use SignerPHP\Infrastructure\PdfCore\PDFObject;
-use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreParsingException;
-use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueObject;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueReference;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
 
 final class PageInfoTest extends TestCase
 {
