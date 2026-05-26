@@ -191,6 +191,31 @@ final class ObjectStreamResolverTest extends TestCase
         (new ObjectStreamResolver)->resolveFromObjectStream($document, 99, 0, 20);
     }
 
+    public function test_resolve_from_object_stream_throws_when_n_is_negative(): void
+    {
+        $objectStream = new PDFObject(99, [
+            'Type' => '/ObjStm',
+            'First' => 5,
+            'N' => -1,
+        ]);
+        $objectStream->setStream('20 0 << /Type /Catalog >>');
+
+        $document = new class($objectStream) extends PdfDocument
+        {
+            public function __construct(private readonly PDFObject $objectStream) {}
+
+            public function findObject(int $oid): ?PDFObject
+            {
+                return $oid === 99 ? $this->objectStream : null;
+            }
+        };
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Invalid object count in object stream 99');
+
+        (new ObjectStreamResolver)->resolveFromObjectStream($document, 99, 0, 20);
+    }
+
     public function test_resolve_from_object_stream_throws_for_invalid_index_pairs(): void
     {
         $objectStream = new PDFObject(99, [
@@ -249,6 +274,33 @@ final class ObjectStreamResolverTest extends TestCase
             'Type' => '/ObjStm',
             'First' => strlen($index),
             'N' => 2,
+        ]);
+        $objectStream->setStream($index.$payload);
+
+        $document = new class($objectStream) extends PdfDocument
+        {
+            public function __construct(private readonly PDFObject $objectStream) {}
+
+            public function findObject(int $oid): ?PDFObject
+            {
+                return $oid === 99 ? $this->objectStream : null;
+            }
+        };
+
+        $resolved = (new ObjectStreamResolver)->resolveFromObjectStream($document, 99, 0, 20);
+
+        self::assertSame(20, $resolved->getOid());
+        self::assertSame('Catalog', $resolved['Type']->val());
+    }
+
+    public function test_resolve_from_object_stream_falls_back_to_full_index_when_declared_n_is_too_small(): void
+    {
+        $index = '9 0 20 5 ';
+        $payload = 'null << /Type /Catalog >>';
+        $objectStream = new PDFObject(99, [
+            'Type' => '/ObjStm',
+            'First' => strlen($index),
+            'N' => 1,
         ]);
         $objectStream->setStream($index.$payload);
 

@@ -48,12 +48,17 @@ final class ObjectStreamResolver
         $stream = $objstm->getStream(false);
         $index = substr((string) $stream, 0, $firstValue);
         preg_match_all('/-?\d+/', $index, $indexMatches);
-        $index = $indexMatches[0] ?? [];
+        $fullIndex = $indexMatches[0] ?? [];
+        $index = $fullIndex;
         $stream = substr((string) $stream, $firstValue);
 
         $expectedEntries = $nValue * 2;
         if ($expectedEntries > 0 && count($index) >= $expectedEntries) {
             $index = array_slice($index, 0, $expectedEntries);
+        }
+
+        if ((count($index) < 2 || count($index) % 2 !== 0) && count($fullIndex) >= 2 && count($fullIndex) % 2 === 0) {
+            $index = $fullIndex;
         }
 
         if (count($index) < 2 || count($index) % 2 !== 0) {
@@ -75,6 +80,17 @@ final class ObjectStreamResolver
             for ($i = 0; $i + 1 < $indexCount; $i += 2) {
                 if ((int) $index[$i] === $oid) {
                     $offset = (int) $index[$i + 1];
+                    break;
+                }
+            }
+        }
+
+        if ($offset === null && $index !== $fullIndex && count($fullIndex) % 2 === 0) {
+            $fullIndexCount = count($fullIndex);
+            for ($i = 0; $i + 1 < $fullIndexCount; $i += 2) {
+                if ((int) $fullIndex[$i] === $oid) {
+                    $offset = (int) $fullIndex[$i + 1];
+                    $index = $fullIndex;
                     break;
                 }
             }

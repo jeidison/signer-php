@@ -32,6 +32,17 @@ final class PDFObjectTest extends TestCase
         $object->getStream(false);
     }
 
+    public function test_get_stream_accepts_filter_name_without_leading_slash(): void
+    {
+        $object = new PDFObject(1, ['Filter' => 'FlateDecode']);
+
+        $payload = gzcompress('abc');
+        self::assertIsString($payload);
+        $object->setStream($payload);
+
+        self::assertSame('abc', $object->getStream(false));
+    }
+
     public function test_get_stream_decodes_flate_predictor_one(): void
     {
         $object = new PDFObject(1, [
@@ -232,6 +243,17 @@ final class PDFObjectTest extends TestCase
         $payload = $encoder('abc');
         self::assertIsString($payload);
         $object->setStream($payload);
+
+        self::assertSame('abc', $object->getStream(false));
+    }
+
+    public function test_get_stream_decodes_flate_stream_with_trailing_garbage_suffix(): void
+    {
+        $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
+
+        $payload = gzcompress('abc');
+        self::assertIsString($payload);
+        $object->setStream($payload."\x00\x00TRAIL");
 
         self::assertSame('abc', $object->getStream(false));
     }

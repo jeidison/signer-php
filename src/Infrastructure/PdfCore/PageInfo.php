@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SignerPHP\Infrastructure\PdfCore;
 
+use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreParsingException;
 use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
 
 class PageInfo
@@ -28,17 +29,44 @@ class PageInfo
     public function acquirePagesInfo(): self
     {
         $rootValue = $this->pdfDocument->getTrailerObject()['Root'] ?? null;
-        if (($rootValue === null) || (($root = $rootValue->asObjectReferenceOrNull()) === null) || is_array($root)) {
+        if ($rootValue === null) {
             throw new PdfCoreStructureException('Could not resolve root object reference from trailer.');
         }
 
-        $root = $this->pdfDocument->getObject($root);
+        $rootRef = null;
+        $rootRef = $rootValue->asObjectReferenceOrNull();
+
+        if (is_array($rootRef)) {
+            $rootRef = null;
+        }
+
+        $root = is_int($rootRef) ? $this->pdfDocument->getObject($rootRef) : null;
+        if ($root === null) {
+            $root = $this->findFallbackCatalogObject();
+        }
+
         if ($root === null) {
             throw new PdfCoreStructureException('Could not resolve root object from trailer.');
         }
 
         $pagesValue = $root['Pages'] ?? null;
-        if (($pagesValue === null) || (($pages = $pagesValue->asObjectReferenceOrNull()) === null) || is_array($pages)) {
+        $pages = null;
+        if ($pagesValue !== null) {
+            $pages = $pagesValue->asObjectReferenceOrNull();
+        }
+
+        if (is_int($pages)) {
+            if ($this->pdfDocument->getObject($pages) === null) {
+                $fallbackPages = $this->findFallbackPagesRootOid($root->getOid());
+                if ($fallbackPages !== null) {
+                    $pages = $fallbackPages;
+                }
+            }
+        } else {
+            $pages = $this->findFallbackPagesRootOid($root->getOid());
+        }
+
+        if (! is_int($pages)) {
             throw new PdfCoreStructureException('Could not resolve pages root from document catalog.');
         }
 
@@ -68,7 +96,10 @@ class PageInfo
             case 'Pages':
                 $kids = $object['Kids']?->asObjectReferenceOrNull();
                 if (! is_array($kids)) {
-                    throw new PdfCoreStructureException('Could not resolve Kids list for page tree object '.$oid.'.');
+                    $kids = $this->deriveKidsFromParentReference($oid, $visitedOids);
+                    if ($kids === []) {
+                        throw new PdfCoreStructureException('Could not resolve Kids list for page tree object '.$oid.'.');
+                    }
                 }
 
                 $currentSize = $inheritedSize;
@@ -101,6 +132,83 @@ class PageInfo
         }
 
         return $pageDescriptors;
+    }
+
+    private function findFallbackCatalogObject(): ?PDFObject
+    {
+        foreach ($this->discoverObjects() as $candidate) {
+            if ($candidate['Type']?->val() === 'Catalog') {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private function findFallbackPagesRootOid(int $catalogOid): ?int
+    {
+        $fallback = null;
+
+        foreach ($this->discoverObjects() as $candidate) {
+            if ($candidate['Type']?->val() !== 'Pages') {
+                continue;
+            }
+
+            if ($fallback === null) {
+                $fallback = $candidate->getOid();
+            }
+
+            $parentRef = $candidate['Parent']?->asObjectReferenceOrNull();
+            if (is_int($parentRef) && $parentRef === $catalogOid) {
+                return $candidate->getOid();
+            }
+        }
+
+        return $fallback;
+    }
+
+    /** @return array<int, int> */
+    private function deriveKidsFromParentReference(int $parentOid, array $visitedOids): array
+    {
+        $kids = [];
+
+        foreach ($this->discoverObjects() as $candidate) {
+            $childOid = $candidate->getOid();
+            $parentRef = $candidate['Parent']?->asObjectReferenceOrNull();
+            if (is_int($parentRef) && $parentRef === $parentOid) {
+                $kids[] = $childOid;
+            }
+        }
+
+        sort($kids);
+
+        return $kids;
+    }
+
+    /** @return array<int, PDFObject> */
+    private function discoverObjects(): array
+    {
+        $objects = $this->pdfDocument->getPdfObjects();
+        $xrefTable = $this->pdfDocument->getXrefTable();
+
+        foreach ($xrefTable as $oid => $entry) {
+            $oid = (int) $oid;
+            if ($oid === 0 || isset($objects[$oid])) {
+                continue;
+            }
+
+            try {
+                $candidate = $this->pdfDocument->getObject($oid);
+            } catch (PdfCoreParsingException|PdfCoreStructureException) {
+                continue;
+            }
+
+            if ($candidate instanceof PDFObject) {
+                $objects[$oid] = $candidate;
+            }
+        }
+
+        return $objects;
     }
 
     public function getPageSize(int|PDFObject $page): ?array

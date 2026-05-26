@@ -15,8 +15,6 @@ class Struct
 {
     private PdfDocument $pdfDocument;
 
-    private const REGEX_PDF_VERSION = '/%PDF-(\d+\.\d+)/';
-
     public static function new(): static
     {
         return new static;
@@ -52,12 +50,10 @@ class Struct
             throw new Exception('Failed to get PDF version');
         }
 
-        $headerWindow = substr($buffer, 0, 8192);
-        if (preg_match(self::REGEX_PDF_VERSION, $headerWindow, $matches) !== 1) {
+        $pdfVersion = $this->resolvePdfVersion($buffer);
+        if ($pdfVersion === null) {
             throw new Exception('PDF version not found');
         }
-
-        $pdfVersion = 'PDF-'.$matches[1];
 
         preg_match_all('/startxref\s*([0-9]+)\s*%%EOF($|[\r\n])/ms', $buffer, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
 
@@ -88,10 +84,19 @@ class Struct
             );
         }
 
-        $xref = CrossReferenceManager::new()
-            ->withXrefPosition($xrefPos)
-            ->withPdfDocument($this->pdfDocument)
-            ->parse();
+        try {
+            $xref = CrossReferenceManager::new()
+                ->withXrefPosition($xrefPos)
+                ->withPdfDocument($this->pdfDocument)
+                ->parse();
+        } catch (Exception $e) {
+            $recovered = $this->recoverStructureWithoutXref($buffer, $pdfVersion, $versions);
+            if ($recovered !== null) {
+                return $recovered;
+            }
+
+            throw $e;
+        }
 
         return new ParsedDocumentStructure(
             trailer: $xref->trailer,
@@ -188,8 +193,7 @@ class Struct
                 if (! is_array($candidate)) {
                     continue;
                 }
-
-                $xrefOffset = $candidate[1];
+                $xrefOffset = (int) ($candidate[1] ?? 0);
                 if (strpos($buffer, 'trailer', $xrefOffset) !== false) {
                     return $xrefOffset;
                 }
@@ -245,15 +249,12 @@ class Struct
         }
 
         $lastRootReference = end($matches);
-        if (! is_array($lastRootReference)) {
+        if ($lastRootReference === false) {
             return null;
         }
 
-        $rootOidRaw = $lastRootReference[1] ?? null;
-        $rootGenerationRaw = $lastRootReference[2] ?? null;
-        if (! is_string($rootOidRaw) || ! is_string($rootGenerationRaw)) {
-            return null;
-        }
+        $rootOidRaw = (string) $lastRootReference[1];
+        $rootGenerationRaw = (string) $lastRootReference[2];
 
         $rootOid = $this->parsePositiveIntWithinRange($rootOidRaw);
         $rootGeneration = $this->parsePositiveIntWithinRange($rootGenerationRaw);
@@ -286,13 +287,9 @@ class Struct
         $metadata = [];
 
         foreach ($matches as $match) {
-            $oidRaw = $match[1][0] ?? null;
-            $oidOffset = $match[1][1] ?? null;
-            $generationRaw = $match[2][0] ?? null;
-
-            if (! is_string($oidRaw) || ! is_int($oidOffset) || ! is_string($generationRaw)) {
-                continue;
-            }
+            $oidRaw = (string) $match[1][0];
+            $oidOffset = (int) $match[1][1];
+            $generationRaw = (string) $match[2][0];
 
             $oid = $this->parsePositiveIntWithinRange($oidRaw);
             $generation = $this->parsePositiveIntWithinRange($generationRaw);
@@ -330,5 +327,58 @@ class Struct
         }
 
         return (int) $number;
+    }
+
+    private function resolvePdfVersion(string $buffer): ?string
+    {
+        $headerWindow = substr($buffer, 0, 8192);
+        if (preg_match('/%PDF-([^\s]+)/', $headerWindow, $matches) === 1) {
+            $normalized = $this->normalizeMalformedPdfVersionToken((string) $matches[1]);
+            if ($normalized !== null) {
+                return 'PDF-'.$normalized;
+            }
+        }
+
+        if ($this->looksLikePdfStructure($buffer)) {
+            return 'PDF-1.4';
+        }
+
+        return null;
+    }
+
+    private function normalizeMalformedPdfVersionToken(string $token): ?string
+    {
+        if ($token === '') {
+            return null;
+        }
+
+        if (preg_match('/^(\d+)\.(\d+)$/', $token, $matches) === 1) {
+            return $matches[1].'.'.$matches[2];
+        }
+
+        if (preg_match('/^(\d+)\.$/', $token, $matches) === 1) {
+            return $matches[1].'.0';
+        }
+
+        if (preg_match('/^[A-Za-z]\.([0-9]+)$/', $token, $matches) === 1) {
+            return '1.'.$matches[1];
+        }
+
+        if (preg_match('/^(\d+)$/', $token, $matches) === 1) {
+            return $matches[1].'.0';
+        }
+
+        return null;
+    }
+
+    private function looksLikePdfStructure(string $buffer): bool
+    {
+        if (preg_match('/\d+\s+\d+\s+obj\b/', $buffer) !== 1) {
+            return false;
+        }
+
+        return str_contains($buffer, 'xref')
+            || str_contains($buffer, 'trailer')
+            || str_contains($buffer, '/Root');
     }
 }
