@@ -7,6 +7,7 @@ namespace SignerPHP\Tests\Infrastructure\PdfCore;
 use PHPUnit\Framework\TestCase;
 use SignerPHP\Infrastructure\PdfCore\PDFObject;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueList;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueObject;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
 
 final class PDFObjectTest extends TestCase
@@ -106,6 +107,67 @@ final class PDFObjectTest extends TestCase
             ]),
         ]);
         $object->setStream(self::ascii85Encode($flatePayload));
+
+        self::assertSame('hello world', $object->getStream(false));
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function invalidAscii85Payloads(): array
+    {
+        return [
+            'z marker after a partial tuple' => ['!z'],
+            'out of range ascii85 byte' => ['~'],
+        ];
+    }
+
+    #[\PHPUnit\Framework\Attributes\DataProvider('invalidAscii85Payloads')]
+    public function test_get_stream_throws_for_invalid_ascii85_payload(string $payload): void
+    {
+        $object = new PDFObject(1, ['Filter' => new PDFValueSimple('/ASCII85Decode')]);
+        $object->setStream($payload);
+
+        $this->expectException(\SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreParsingException::class);
+        $this->expectExceptionMessage('Invalid ASCII85 stream data.');
+
+        $object->getStream(false);
+    }
+
+    public function test_get_stream_decodes_flate_filter_when_filter_name_is_unprefixed_scalar_value(): void
+    {
+        $object = new PDFObject(1, ['Filter' => new PDFValueSimple('FlateDecode')]);
+
+        $payload = gzcompress('hello world');
+        self::assertIsString($payload);
+        $object->setStream($payload);
+
+        self::assertSame('hello world', $object->getStream(false));
+    }
+
+    public function test_get_stream_decodes_flate_filter_when_filter_name_is_returned_as_plain_string(): void
+    {
+        $filterValue = new class(['Filter' => 'FlateDecode']) extends PDFValueObject {
+            public function offsetExists($offset): bool
+            {
+                return $offset === 'Filter';
+            }
+
+            public function offsetGet($offset): mixed
+            {
+                if ($offset === 'Filter') {
+                    return 'FlateDecode';
+                }
+
+                return null;
+            }
+        };
+
+        $object = new PDFObject(1, $filterValue);
+
+        $payload = gzcompress('hello world');
+        self::assertIsString($payload);
+        $object->setStream($payload);
 
         self::assertSame('hello world', $object->getStream(false));
     }

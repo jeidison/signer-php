@@ -344,7 +344,7 @@ endstream
                 return $filters;
             }
 
-            $name = (string) $filterField;
+            $name = (string) $raw;
             if ($name !== '' && $name[0] !== '/') {
                 $name = '/'.$name;
             }

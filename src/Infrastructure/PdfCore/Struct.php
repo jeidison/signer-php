@@ -175,8 +175,8 @@ class Struct
             $window = substr($buffer, $windowStart, $typeOffset - $windowStart);
 
             if (preg_match_all('/\d+\s+\d+\s+obj\b/', $window, $objectMatches, PREG_OFFSET_CAPTURE) > 0) {
-                $lastInWindowIndex = count($objectMatches[0]) - 1;
-                $lastObjectOffset = $windowStart + $objectMatches[0][$lastInWindowIndex][1];
+                $lastObject = end($objectMatches[0]);
+                $lastObjectOffset = $windowStart + $lastObject[1];
             }
 
             $scanOffset = $typeOffset + 1;
