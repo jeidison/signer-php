@@ -517,4 +517,97 @@ final class StructTest extends TestCase
             ->withPdfDocument($document)
             ->parse();
     }
+
+    // ----------------------------------------------------------------
+    // Corpus hardening regression tests (problems found at 142/238 baseline)
+    // ----------------------------------------------------------------
+
+    /**
+     * Problem #3 (8 corpus cases): PDF version marker sits beyond the first 8 KiB
+     * due to a large binary prefix prepended by the producing tool.
+     *
+     * Reproduce: 9 KiB of garbage bytes before %PDF-1.6.  resolvePdfVersion() only
+     * scans 8192 bytes, so it misses the header and falls back to PDF-1.4 instead
+     * of returning the actual version encoded in the file.
+     */
+    public function test_parse_detects_exact_pdf_version_when_header_marker_is_beyond_8kb(): void
+    {
+        $prefix = str_repeat("\x00", 9000); // 9 KiB of nulls before the header
+        $body = "1 0 obj <</Type /Catalog /Pages 2 0 R>> endobj\n"
+            ."2 0 obj <</Type /Pages /Kids [] /Count 0>> endobj\n"
+            ."trailer <</Root 1 0 R /Size 3>>\nstartxref\n0\n%%EOF\n";
+        $pdf = $prefix."%PDF-1.6\n".$body;
+
+        $document = new PdfDocument;
+        $document->setBufferFromString($pdf);
+
+        $structure = Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+
+        // Must detect the actual version in the file, NOT fall back to 1.4
+        self::assertSame('PDF-1.6', $structure->version);
+    }
+
+    /**
+     * Problem #3 variant (producer metadata): Some corpus files have no %PDF- header
+     * at all but embed the version string inside a /Producer or /Creator value.
+     *
+     * Reproduce: buffer contains a /Producer entry that mentions "PDF-1.7" but no
+     * %PDF- line.  Current code returns 'PDF-1.4' (generic fallback); it should
+     * extract the version from the metadata instead.
+     */
+    public function test_parse_infers_version_from_producer_metadata_when_header_is_absent(): void
+    {
+        // No %PDF- header; version only visible in /Producer metadata.
+        $pdf = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+            ."2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n"
+            ."3 0 obj\n<< /Type /Info /Producer (Acrobat Distiller 9.0 PDF 1.7) >>\nendobj\n"
+            ."trailer\n<< /Root 1 0 R /Info 3 0 R /Size 4 >>\nstartxref\n0\n%%EOF\n";
+
+        $document = new PdfDocument;
+        $document->setBufferFromString($pdf);
+
+        $structure = Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+
+        // Must extract version from /Producer, NOT fall back to 1.4
+        self::assertSame('PDF-1.7', $structure->version);
+    }
+
+    /**
+     * Problem #5 (4 corpus cases): Trailer /Root is syntactically valid but the
+     * referenced object is absent from the xref table.  Code must locate the
+     * /Type /Catalog object by scanning object headers instead of blindly
+     * trusting the trailer's /Root reference.
+     *
+     * Reproduce: trailer /Root 99 0 R but no object 99 exists; object 1 has
+     * /Type /Catalog.  Current extractSyntheticTrailerFromRootReference() only
+     * looks for /Root refs in the buffer, not for /Type /Catalog directly.
+     */
+    public function test_parse_synthesizes_root_from_catalog_type_object_when_trailer_root_is_invalid(): void
+    {
+        $pdf = "%PDF-1.4\n"
+            ."1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+            ."2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n"
+            // xref with deliberate bad offsets (0) to force xref parse failure
+            ."xref\n0 3\n"
+            ."0000000000 65535 f\n"
+            ."0000000000 00000 n\n"
+            ."0000000000 00000 n\n"
+            ."trailer\n<< /Root 99 0 R /Size 3 >>\n"
+            ."startxref\n0\n%%EOF\n";
+
+        $document = new PdfDocument;
+        $document->setBufferFromString($pdf);
+
+        $structure = Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+
+        // Should synthesize a valid trailer pointing to the /Type /Catalog object
+        self::assertSame('PDF-1.4', $structure->version);
+        self::assertNotNull($structure->trailer);
+    }
 }
