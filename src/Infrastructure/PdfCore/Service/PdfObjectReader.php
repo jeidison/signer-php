@@ -13,13 +13,15 @@ final class PdfObjectReader
 {
     public function objectFromBuffer(string $buffer, int|string|null $expectedObjId, int $offset = 0, int &$offsetEnd = 0): PDFObject
     {
-        if (preg_match('/(\d+)\s+(\d+)\s+obj/ms', $buffer, $matches, 0, $offset) !== 1) {
+        $headerMatchedAt = strpos($buffer, 'obj', $offset);
+        if (preg_match('/(\d+)\s+(\d+)\s+obj/ms', $buffer, $matches, PREG_OFFSET_CAPTURE, $offset) !== 1) {
             throw new PdfCoreParsingException('Invalid object definition: '.$expectedObjId);
         }
 
-        $foundObjHeader = $matches[0];
-        $foundObjId = (int) $matches[1];
-        $foundObjGeneration = (int) $matches[2];
+        $foundObjHeader = $matches[0][0];
+        $foundObjHeaderOffset = $matches[0][1];
+        $foundObjId = (int) $matches[1][0];
+        $foundObjGeneration = (int) $matches[2][0];
 
         if ($expectedObjId === null) {
             $expectedObjId = $foundObjId;
@@ -34,18 +36,30 @@ final class PdfObjectReader
             ));
         }
 
-        $offset += strlen($foundObjHeader);
+        $offset = $foundObjHeaderOffset + strlen($foundObjHeader);
 
         $parser = new ObjectParser;
         $stream = new StreamReader($buffer, $offset);
         $objParsed = $parser->parse($stream);
 
-        switch ($parser->currentToken()) {
-            case ObjectParser::T_STREAM_BEGIN:
-            case ObjectParser::T_OBJECT_END:
+        // Skip any trailing comments or stray tokens between >> and stream/endobj.
+        $skipLimit = 32;
+        while ($skipLimit-- > 0) {
+            $tok = $parser->currentToken();
+            if ($tok === ObjectParser::T_STREAM_BEGIN || $tok === ObjectParser::T_OBJECT_END) {
                 break;
-            default:
-                throw new PdfCoreParsingException('Malformed object');
+            }
+            if ($tok === ObjectParser::T_COMMENT
+                || $tok === ObjectParser::T_LIST_START
+                || $tok === ObjectParser::T_LIST_END
+                || $tok === ObjectParser::T_SIMPLE
+                || $tok === ObjectParser::T_FIELD) {
+                $parser->advanceToken();
+
+                continue;
+            }
+
+            throw new PdfCoreParsingException('Malformed object');
         }
 
         $offsetEnd = $stream->getPosition();

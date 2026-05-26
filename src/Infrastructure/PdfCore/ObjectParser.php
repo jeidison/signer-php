@@ -130,8 +130,15 @@ class ObjectParser implements Stringable
                     $this->advanceToken();
                     $value = $this->parseValue();
                     if ($value === null) {
+                        if ($this->currentTokenType === self::T_LIST_END) {
+                            // Keep tolerant behavior for stray ']' after a field key.
+                            $this->advanceToken();
+                            break;
+                        }
+
                         throw new PdfCoreParsingException('Invalid null object value for field '.$field);
                     }
+
                     $object[$field] = $value;
                     break;
 
@@ -139,6 +146,15 @@ class ObjectParser implements Stringable
                     $this->advanceToken();
 
                     return new PDFValueObject($object);
+
+                case self::T_COMMENT:
+                    $this->advanceToken();
+                    break;
+
+                case self::T_LIST_END:
+                    // Stray ']' inside a dict — skip (non-conforming but recoverable).
+                    $this->advanceToken();
+                    break;
 
                 default:
                     throw new PdfCoreParsingException('Invalid token: '.$this);
@@ -202,6 +218,7 @@ class ObjectParser implements Stringable
                 case self::T_OBJECT_BEGIN:
                 case self::T_STREAM_END:
                     throw new PdfCoreParsingException('Invalid keyword');
+                case self::T_LIST_END:
                 case self::T_OBJECT_END:
                 case self::T_STREAM_BEGIN:
                     return null;

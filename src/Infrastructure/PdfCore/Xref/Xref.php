@@ -86,7 +86,29 @@ class Xref
 
     private function isCrossReferenceStream(): bool
     {
-        return strpos($this->pdfDocument->getBuffer()->raw(), 'trailer', $this->xrefPosition) === false;
+        $raw = $this->pdfDocument->getBuffer()->raw();
+        if ($this->xrefPosition > strlen($raw)) {
+            return false;
+        }
+
+        // Look at what is actually at the xref position.
+        // Skip whitespace, then check whether we see an object header (N G obj) — which
+        // indicates a cross-reference stream — or the literal 'xref' keyword.
+        $snippet = substr($raw, $this->xrefPosition, 64);
+        $trimmed = ltrim($snippet);
+
+        // If trimmed content looks like an object definition (digits … obj), it's a stream.
+        if (preg_match('/^\d+\s+\d+\s+obj\b/', $trimmed) === 1) {
+            return true;
+        }
+
+        // If trimmed content starts with 'xref', it's a cross-reference table.
+        if (strncmp($trimmed, 'xref', 4) === 0) {
+            return false;
+        }
+
+        // Fallback: use the old heuristic (no 'trailer' keyword after this position → stream).
+        return strpos($raw, 'trailer', $this->xrefPosition) === false;
     }
 
     private function contentBuilder(): XrefContentBuilder
