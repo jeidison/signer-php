@@ -46,7 +46,7 @@ final class PDFObjectTest extends TestCase
     }
 
     /**
-     * @param callable(): string $buildStream
+     * @param  callable(): string  $buildStream
      */
     #[\PHPUnit\Framework\Attributes\DataProvider('flateStreamEncodings')]
     public function test_get_stream_decodes_all_flate_encoding_variants(callable $buildStream, string $expected): void

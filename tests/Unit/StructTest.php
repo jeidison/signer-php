@@ -100,7 +100,7 @@ final class StructTest extends TestCase
         // Lenient form: startxref carries a valid offset but %%EOF is missing (truncated file).
         // The lenient regex should extract the offset and proceed.
         $xrefBody = "xref\n0 1\n0000000010 00000 n \ntrailer\n<< /Size 1 >>\n";
-        $pdf = "%PDF-1.4\n" . $xrefBody . "startxref\n9\n";
+        $pdf = "%PDF-1.4\n".$xrefBody."startxref\n9\n";
         $document = new PdfDocument;
         $document->setBufferFromString($pdf);
 
@@ -118,7 +118,7 @@ final class StructTest extends TestCase
         // Both strict and lenient regexes fail; backward scan falls back to the xref table.
         // Trailer.php can find "trailer...startxref" because the keyword exists in the buffer.
         $xrefBody = "xref\n0 1\n0000000010 00000 n \ntrailer\n<< /Size 1 >>\nstartxref\n%%EOF\n";
-        $pdf = "%PDF-1.4\n" . $xrefBody;
+        $pdf = "%PDF-1.4\n".$xrefBody;
         $document = new PdfDocument;
         $document->setBufferFromString($pdf);
 
