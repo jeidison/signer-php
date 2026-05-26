@@ -378,6 +378,76 @@ final class PageInfoTest extends TestCase
         self::assertNotNull($pageInfo->getPage(0));
     }
 
+    public function test_acquire_pages_info_raw_buffer_discovery_returns_early_for_empty_buffer(): void
+    {
+        $document = new PdfDocument;
+        $document->setTrailerObject(new PDFValueObject([
+            'Root' => new PDFValueReference(99),
+        ]));
+        $document->setBufferFromString('');
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Could not resolve root object from trailer.');
+
+        PageInfo::new()
+            ->withPdfDocument($document)
+            ->acquirePagesInfo();
+    }
+
+    public function test_acquire_pages_info_raw_buffer_discovery_returns_early_without_object_matches(): void
+    {
+        $document = new PdfDocument;
+        $document->setTrailerObject(new PDFValueObject([
+            'Root' => new PDFValueReference(99),
+        ]));
+        $document->setBufferFromString("%PDF-1.7\nno indirect object here\n");
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Could not resolve root object from trailer.');
+
+        PageInfo::new()
+            ->withPdfDocument($document)
+            ->acquirePagesInfo();
+    }
+
+    public function test_acquire_pages_info_raw_buffer_discovery_skips_known_oid_and_parse_failures(): void
+    {
+        $document = new class extends PdfDocument
+        {
+            public function __construct()
+            {
+                $this->setTrailerObject(new PDFValueObject([
+                    'Root' => new PDFValueReference(99),
+                ]));
+                $this->setBufferFromString(
+                    "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+                    ."2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n"
+                    ."3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 10 10] >>\nendobj\n"
+                );
+                $this->addObject(new PDFObject(1, [
+                    'Type' => '/Catalog',
+                    'Pages' => new PDFValueReference(2),
+                ]));
+            }
+
+            public function findObjectAtOffset(int $objectOffset, ?int $expectedOid = null): PDFObject
+            {
+                if ($expectedOid === 2) {
+                    throw new PdfCoreParsingException('synthetic parse failure');
+                }
+
+                return parent::findObjectAtOffset($objectOffset, $expectedOid);
+            }
+        };
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Could not resolve page tree object 2.');
+
+        PageInfo::new()
+            ->withPdfDocument($document)
+            ->acquirePagesInfo();
+    }
+
     public function test_get_page_size_returns_null_for_negative_index(): void
     {
         $document = new PdfDocument;
