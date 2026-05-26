@@ -138,6 +138,11 @@ class PdfDocument
         $this->buffer = new Buffer($buffer);
     }
 
+    public function hasBuffer(): bool
+    {
+        return isset($this->buffer);
+    }
+
     public function getPdfObjects(): array
     {
         return $this->pdfObjects;
