@@ -217,12 +217,11 @@ class PageInfo
      */
     private function discoverObjectsFromRawBuffer(array $objects): array
     {
-        try {
-            $buffer = $this->pdfDocument->getBuffer()->raw();
-        } catch (\Error) {
-            // Some tests create documents without a raw buffer; keep current discoveries.
+        if (! $this->pdfDocument->hasBuffer()) {
             return $objects;
         }
+
+        $buffer = $this->pdfDocument->getBuffer()->raw();
 
         if ($buffer === '') {
             return $objects;
