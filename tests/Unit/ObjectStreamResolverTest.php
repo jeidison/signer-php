@@ -764,4 +764,96 @@ final class ObjectStreamResolverTest extends TestCase
         // When no valid stream marker is found, attachObjectStreamIfPresent returns early with empty stream
         self::assertSame('', $object->getStream());
     }
+
+    public function test_recover_stream_data_when_length_is_short_returns_declared_data_when_endstream_is_missing(): void
+    {
+        $resolver = new ObjectStreamResolver;
+        $method = new \ReflectionMethod(ObjectStreamResolver::class, 'recoverStreamDataWhenLengthIsShort');
+        $method->setAccessible(true);
+
+        $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
+        $declaredData = "invalid-flate-data";
+        $buffer = "stream\n{$declaredData}\ntruncated";
+
+        $result = $method->invoke($resolver, $buffer, 7, $declaredData, $object);
+
+        self::assertSame($declaredData, $result);
+    }
+
+    public function test_recover_stream_data_when_length_is_short_uses_decodable_candidate_until_endstream(): void
+    {
+        $resolver = new ObjectStreamResolver;
+        $method = new \ReflectionMethod(ObjectStreamResolver::class, 'recoverStreamDataWhenLengthIsShort');
+        $method->setAccessible(true);
+
+        $decoded = '23 0 << /Type /Catalog >>';
+        $fullPayload = gzcompress($decoded);
+        self::assertIsString($fullPayload);
+
+        $declaredData = substr($fullPayload, 0, max(1, strlen($fullPayload) - 10));
+        $buffer = $fullPayload."\nendstream\n";
+        $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
+
+        $result = $method->invoke($resolver, $buffer, 0, $declaredData, $object);
+
+        self::assertNotSame($declaredData, $result);
+
+        $probe = new PDFObject(10, ['Filter' => '/FlateDecode']);
+        $probe->setStream($result, true);
+        self::assertSame($decoded, $probe->getStream(false));
+    }
+
+    public function test_recover_stream_data_when_length_is_short_returns_declared_when_candidate_exceeds_guard_limit(): void
+    {
+        $resolver = new ObjectStreamResolver;
+        $method = new \ReflectionMethod(ObjectStreamResolver::class, 'recoverStreamDataWhenLengthIsShort');
+        $method->setAccessible(true);
+
+        $declaredData = 'invalid-flate-data';
+        $buffer = $declaredData.str_repeat('A', 300).'endstream';
+        $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
+
+        $result = $method->invoke($resolver, $buffer, 0, $declaredData, $object);
+
+        self::assertSame($declaredData, $result);
+    }
+
+    public function test_recover_stream_data_when_length_is_short_returns_declared_when_trimmed_candidate_is_not_longer(): void
+    {
+        $resolver = new ObjectStreamResolver;
+        $method = new \ReflectionMethod(ObjectStreamResolver::class, 'recoverStreamDataWhenLengthIsShort');
+        $method->setAccessible(true);
+
+        $declaredData = 'invalid-flate-data';
+        $buffer = $declaredData."\nendstream";
+        $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
+
+        $result = $method->invoke($resolver, $buffer, 0, $declaredData, $object);
+
+        self::assertSame($declaredData, $result);
+    }
+
+    public function test_uses_flate_decode_handles_filter_array_values(): void
+    {
+        $resolver = new ObjectStreamResolver;
+        $method = new \ReflectionMethod(ObjectStreamResolver::class, 'usesFlateDecode');
+        $method->setAccessible(true);
+
+        $withoutFlate = new PDFObject(1, ['Filter' => ['/ASCII85Decode', '/LZWDecode']]);
+        $withFlate = new PDFObject(2, ['Filter' => ['/ASCII85Decode', '/FlateDecode']]);
+
+        self::assertFalse($method->invoke($resolver, $withoutFlate));
+        self::assertTrue($method->invoke($resolver, $withFlate));
+    }
+
+    public function test_can_decode_stream_returns_false_when_probe_throws_for_invalid_flate_data(): void
+    {
+        $resolver = new ObjectStreamResolver;
+        $method = new \ReflectionMethod(ObjectStreamResolver::class, 'canDecodeStream');
+        $method->setAccessible(true);
+
+        $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
+
+        self::assertFalse($method->invoke($resolver, $object, 'invalid-flate-data'));
+    }
 }
