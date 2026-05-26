@@ -127,7 +127,13 @@ class Struct
 
         // Last resort: no valid startxref offset found. Scan backward for the last
         // standalone 'xref' keyword so we can locate the xref table directly.
-        return $this->findLastStandaloneXref($buffer);
+        $xrefTablePosition = $this->findLastStandaloneXref($buffer);
+        if ($xrefTablePosition !== null) {
+            return $xrefTablePosition;
+        }
+
+        // Some malformed PDFs omit startxref entirely but still contain a valid xref stream.
+        return $this->findLastXrefStreamObjectPosition($buffer);
     }
 
     /**
@@ -152,5 +158,30 @@ class Struct
         }
 
         return null;
+    }
+
+    /**
+     * Find the byte offset of the last object header whose dictionary declares /Type /XRef.
+     * Returns null when no xref stream object can be identified.
+     */
+    private function findLastXrefStreamObjectPosition(string $buffer): ?int
+    {
+        $scanOffset = 0;
+        $lastObjectOffset = null;
+
+        while (preg_match('/\/Type\s*\/XRef\b/', $buffer, $typeMatch, PREG_OFFSET_CAPTURE, $scanOffset) === 1) {
+            $typeOffset = $typeMatch[0][1];
+            $windowStart = max(0, $typeOffset - 4096);
+            $window = substr($buffer, $windowStart, $typeOffset - $windowStart);
+
+            if (preg_match_all('/\d+\s+\d+\s+obj\b/', $window, $objectMatches, PREG_OFFSET_CAPTURE) > 0) {
+                $lastObject = end($objectMatches[0]);
+                $lastObjectOffset = $windowStart + $lastObject[1];
+            }
+
+            $scanOffset = $typeOffset + 1;
+        }
+
+        return $lastObjectOffset;
     }
 }

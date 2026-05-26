@@ -10,6 +10,7 @@ use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValue;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueObject;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
+use SignerPHP\Infrastructure\PdfCore\Service\Ascii85Codec;
 use Stringable;
 
 class PDFObject implements ArrayAccess, Stringable
@@ -244,7 +245,54 @@ endstream
             }
         }
 
+        // Additional hardening: attempt to recover when arbitrary non-whitespace bytes
+        // precede a valid compressed payload (seen in malformed corpus fixtures).
+        $maxSkip = min(64, max(0, strlen($stream) - 2));
+        for ($skip = 1; $skip <= $maxSkip; $skip++) {
+            $inflated = $attemptInflate(substr($stream, $skip));
+            if (is_string($inflated)) {
+                return $inflated;
+            }
+        }
+
         throw new PdfCoreParsingException('Failed to inflate FlateDecode stream.');
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function normalizeFilters(mixed $filterField): array
+    {
+        $filters = [];
+
+        if (is_object($filterField) && method_exists($filterField, 'val')) {
+            $raw = $filterField->val(true);
+            if (is_array($raw)) {
+                foreach ($raw as $candidate) {
+                    $name = (string) $candidate;
+                    if ($name !== '' && $name[0] !== '/') {
+                        $name = '/'.$name;
+                    }
+                    $filters[] = $name;
+                }
+
+                return $filters;
+            }
+
+            $name = (string) $raw;
+            if ($name !== '' && $name[0] !== '/') {
+                $name = '/'.$name;
+            }
+
+            return [$name];
+        }
+
+        $name = (string) $filterField;
+        if ($name !== '' && $name[0] !== '/') {
+            $name = '/'.$name;
+        }
+
+        return [$name];
     }
 
     public function getStream($raw = true): string
@@ -254,35 +302,34 @@ endstream
         }
 
         if (isset($this->value['Filter'])) {
-            // Normalise: some generators write Filter as a one-element array [/FlateDecode]
-            // instead of the plain name /FlateDecode (ISO 32000 §7.3.8.2).
-            $filterField = $this->value['Filter'];
-            $filterValues = $filterField->val(true);
-            $filterName = is_array($filterValues) && count($filterValues) === 1
-                ? (string) array_values($filterValues)[0]
-                : (string) $filterField;
+            $decoded = (string) $this->stream;
+            $filters = self::normalizeFilters($this->value['Filter']);
 
-            // Re-add leading '/' if the filter value was stored without one.
-            if ($filterName !== '' && $filterName[0] !== '/') {
-                $filterName = '/'.$filterName;
+            foreach ($filters as $filterName) {
+                switch ($filterName) {
+                    case '/ASCII85Decode':
+                        $decoded = Ascii85Codec::decode($decoded);
+
+                        break;
+                    case '/FlateDecode':
+                        $DecodeParams = $this->value['DecodeParms'] ?? [];
+                        $params = [
+                            'Columns' => $DecodeParams['Columns'] ?? new PDFValueSimple(0),
+                            'Predictor' => $DecodeParams['Predictor'] ?? new PDFValueSimple(1),
+                            'BitsPerComponent' => $DecodeParams['BitsPerComponent'] ?? new PDFValueSimple(8),
+                            'Colors' => $DecodeParams['Colors'] ?? new PDFValueSimple(1),
+                        ];
+
+                        $inflated = self::inflateFlateStream($decoded);
+                        $decoded = self::flateDecode($inflated, $params);
+
+                        break;
+                    default:
+                        throw new PdfCoreStructureException('Unknown compression method '.$filterName);
+                }
             }
 
-            switch ($filterName) {
-                case '/FlateDecode':
-                    $DecodeParams = $this->value['DecodeParms'] ?? [];
-                    $params = [
-                        'Columns' => $DecodeParams['Columns'] ?? new PDFValueSimple(0),
-                        'Predictor' => $DecodeParams['Predictor'] ?? new PDFValueSimple(1),
-                        'BitsPerComponent' => $DecodeParams['BitsPerComponent'] ?? new PDFValueSimple(8),
-                        'Colors' => $DecodeParams['Colors'] ?? new PDFValueSimple(1),
-                    ];
-
-                    $inflated = self::inflateFlateStream((string) $this->stream);
-
-                    return self::flateDecode($inflated, $params);
-                default:
-                    throw new PdfCoreStructureException('Unknown compression method '.$filterName);
-            }
+            return $decoded;
         }
 
         return (string) $this->stream;
