@@ -60,7 +60,9 @@ final class StructTest extends TestCase
             ->withPdfDocument($document)
             ->parse();
 
+        self::assertNull($structure->trailer);
         self::assertSame($expectedVersion, $structure->version);
+        self::assertSame([], $structure->xrefTable);
         self::assertSame(0, $structure->xrefPosition);
     }
 
