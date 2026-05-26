@@ -9,6 +9,7 @@ use SignerPHP\Infrastructure\PdfCore\PageDescriptor;
 use SignerPHP\Infrastructure\PdfCore\PageInfo;
 use SignerPHP\Infrastructure\PdfCore\PdfDocument;
 use SignerPHP\Infrastructure\PdfCore\PDFObject;
+use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreParsingException;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueObject;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueReference;
@@ -316,7 +317,7 @@ final class PageInfoTest extends TestCase
                 return match ($oid) {
                     2 => new PDFObject(2, ['Type' => '/Pages', 'Count' => 1]),
                     3 => new PDFObject(3, ['Type' => '/Page', 'Parent' => new PDFValueReference(2), 'MediaBox' => [0, 0, 10, 10]]),
-                    4 => throw new \RuntimeException('synthetic xref read failure'),
+                    4 => throw new PdfCoreParsingException('synthetic xref read failure'),
                     default => null,
                 };
             }
