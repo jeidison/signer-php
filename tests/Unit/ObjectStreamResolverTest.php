@@ -166,6 +166,31 @@ final class ObjectStreamResolverTest extends TestCase
         (new ObjectStreamResolver)->resolveFromObjectStream($document, 99, 0, 20);
     }
 
+    public function test_resolve_from_object_stream_throws_when_n_is_not_numeric(): void
+    {
+        $objectStream = new PDFObject(99, [
+            'Type' => '/ObjStm',
+            'First' => 5,
+            'N' => 'abc',
+        ]);
+        $objectStream->setStream('20 0 << /Type /Catalog >>');
+
+        $document = new class($objectStream) extends PdfDocument
+        {
+            public function __construct(private readonly PDFObject $objectStream) {}
+
+            public function findObject(int $oid): ?PDFObject
+            {
+                return $oid === 99 ? $this->objectStream : null;
+            }
+        };
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Invalid object count in object stream 99');
+
+        (new ObjectStreamResolver)->resolveFromObjectStream($document, 99, 0, 20);
+    }
+
     public function test_resolve_from_object_stream_throws_for_invalid_index_pairs(): void
     {
         $objectStream = new PDFObject(99, [
