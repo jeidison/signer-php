@@ -34,7 +34,8 @@ final class TrailerObjectResolver
 
         $infoObject = $document->getObject($infoObjectId);
         if ($infoObject === null) {
-            throw new PdfCoreStructureException('Invalid info object');
+            // /Info is optional in PDF; ignore stale/broken references and continue.
+            return null;
         }
 
         return $infoObject;
