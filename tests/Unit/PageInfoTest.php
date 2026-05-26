@@ -149,6 +149,26 @@ final class PageInfoTest extends TestCase
         self::assertNotNull($pageInfo->getPage(0));
     }
 
+    public function test_acquire_pages_info_falls_back_to_catalog_discovered_from_raw_buffer_when_xref_cannot_resolve_root(): void
+    {
+        $document = new PdfDocument;
+        $document->setTrailerObject(new PDFValueObject([
+            'Root' => new PDFValueReference(99),
+        ]));
+        $document->setXrefTable([]);
+        $document->setBufferFromString(
+            "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+            ."2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n"
+            ."3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 10 10] >>\nendobj\n"
+        );
+
+        $pageInfo = PageInfo::new()
+            ->withPdfDocument($document)
+            ->acquirePagesInfo();
+
+        self::assertNotNull($pageInfo->getPage(0));
+    }
+
     public function test_acquire_pages_info_falls_back_to_pages_object_when_catalog_pages_reference_is_invalid(): void
     {
         $document = new PdfDocument;
