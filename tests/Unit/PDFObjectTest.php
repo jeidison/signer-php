@@ -324,10 +324,6 @@ final class PDFObjectTest extends TestCase
         $object->getStream(false);
     }
 
-    // ----------------------------------------------------------------
-    // Corpus hardening regression tests
-    // ----------------------------------------------------------------
-
     /**
      * Valid zlib payload preceded by many bytes containing fake-looking zlib
      * headers that exhaust the scan attempt limit.

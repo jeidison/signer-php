@@ -518,10 +518,6 @@ final class StructTest extends TestCase
             ->parse();
     }
 
-    // ----------------------------------------------------------------
-    // Corpus hardening regression tests
-    // ----------------------------------------------------------------
-
     /**
      * PDF version marker sits beyond the first 8 KiB due to a large binary prefix
      * prepended by the producing tool.

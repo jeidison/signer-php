@@ -143,10 +143,6 @@ final class XRef15ParserTest extends TestCase
         self::assertSame(0, $value);
     }
 
-    // ----------------------------------------------------------------
-    // Corpus hardening regression tests
-    // ----------------------------------------------------------------
-
     /**
      * /Prev in a 1.5 xref stream points to a classic xref table, but the bytes
      * at that offset look like `N G obj` (object header).
