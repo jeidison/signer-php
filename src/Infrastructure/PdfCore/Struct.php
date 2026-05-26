@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SignerPHP\Infrastructure\PdfCore;
 
 use Exception;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValue;
 use SignerPHP\Infrastructure\PdfCore\Xref\CrossReferenceManager;
 
 /**
@@ -40,7 +41,7 @@ class Struct
      * Parse PDF structure (version, cross-references, trailer).
      *
      * ISO 32000 §7.5.2 places the version marker `%PDF-x.y` at file start, but some tools
-     * prepend UTF-8 BOM or binary bytes. Robustness principle (RFC 1122): scan first 1024
+     * prepend UTF-8 BOM or binary bytes. Robustness principle (RFC 1122): scan first 8192
      * bytes for `%PDF-` pattern instead of strict first-line matching. Consistent with
      * libpoppler, PDFium, Apache PDFBox.
      */
@@ -51,7 +52,7 @@ class Struct
             throw new Exception('Failed to get PDF version');
         }
 
-        $headerWindow = substr($buffer, 0, 1024);
+        $headerWindow = substr($buffer, 0, 8192);
         if (preg_match(self::REGEX_PDF_VERSION, $headerWindow, $matches) !== 1) {
             throw new Exception('PDF version not found');
         }
@@ -68,6 +69,11 @@ class Struct
         $xrefPos = $this->resolveXrefPosition($buffer);
 
         if ($xrefPos === null) {
+            $recovered = $this->recoverStructureWithoutXref($buffer, $pdfVersion, $versions);
+            if ($recovered !== null) {
+                return $recovered;
+            }
+
             throw new Exception('startxref not found');
         }
 
@@ -93,6 +99,35 @@ class Struct
             xrefTable: $xref->table,
             xrefPosition: $xrefPos,
             xrefVersion: $xref->minimumPdfVersion,
+            revisions: $versions,
+        );
+    }
+
+    /**
+     * @param  array<int, int>  $versions
+     */
+    private function recoverStructureWithoutXref(string $buffer, string $pdfVersion, array $versions): ?ParsedDocumentStructure
+    {
+        $trailer = $this->extractLastTrailerObject($buffer);
+        if ($trailer === null) {
+            $trailer = $this->extractSyntheticTrailerFromRootReference($buffer);
+        }
+
+        if ($trailer === null) {
+            return null;
+        }
+
+        $xrefTable = $this->buildSyntheticXrefTableFromObjectHeaders($buffer);
+        if ($xrefTable === []) {
+            return null;
+        }
+
+        return new ParsedDocumentStructure(
+            trailer: $trailer,
+            version: $pdfVersion,
+            xrefTable: $xrefTable,
+            xrefPosition: 0,
+            xrefVersion: $pdfVersion,
             revisions: $versions,
         );
     }
@@ -137,23 +172,27 @@ class Struct
     }
 
     /**
-     * Scan backward from EOF for the last standalone `xref` keyword (preceded by a newline).
-     * Also handles `xref` at the very start of the buffer (no preceding newline).
-     * Returns the byte offset of the `x` in `xref`, or null if not found.
+     * Scan backward from EOF for the last standalone `xref` keyword.
+     *
+     * `xref` may appear on its own line or after a non-letter separator on the
+     * same line (e.g. `endobj xref`). We intentionally reject matches embedded
+     * in alphabetic tokens such as `startxref`, and we keep only candidates
+     * that are followed by a `trailer` section.
      */
     private function findLastStandaloneXref(string $buffer): ?int
     {
-        foreach (["\nxref\n", "\nxref\r\n", "\r\nxref\n", "\r\nxref\r\n"] as $needle) {
-            $pos = strrpos($buffer, $needle);
-            if ($pos !== false) {
-                return $pos + 1; // skip the leading newline; point at 'x'
-            }
-        }
+        if (preg_match_all('/(?:^|[\r\n \t])(xref)(?:\r\n|\n)/m', $buffer, $matches, PREG_OFFSET_CAPTURE) > 0) {
+            $xrefMatches = $matches[1] ?? [];
+            for ($i = count($xrefMatches) - 1; $i >= 0; $i--) {
+                $candidate = $xrefMatches[$i];
+                if (! is_array($candidate)) {
+                    continue;
+                }
 
-        // Also handle 'xref' at the very start of the buffer (no preceding newline).
-        foreach (["xref\n", "xref\r\n"] as $needle) {
-            if (str_starts_with($buffer, $needle)) {
-                return 0;
+                $xrefOffset = $candidate[1];
+                if (strpos($buffer, 'trailer', $xrefOffset) !== false) {
+                    return $xrefOffset;
+                }
             }
         }
 
@@ -183,5 +222,113 @@ class Struct
         }
 
         return $lastObjectOffset;
+    }
+
+    private function extractLastTrailerObject(string $buffer): ?PDFValue
+    {
+        $trailerPos = strrpos($buffer, 'trailer');
+        if ($trailerPos === false) {
+            return null;
+        }
+
+        try {
+            return (new ObjectParser)->parseString($buffer, $trailerPos + strlen('trailer'));
+        } catch (Exception) {
+            return null;
+        }
+    }
+
+    private function extractSyntheticTrailerFromRootReference(string $buffer): ?PDFValue
+    {
+        if (preg_match_all('/\/Root\s+(\d+)\s+(\d+)\s+R\b/', $buffer, $matches, PREG_SET_ORDER) === 0) {
+            return null;
+        }
+
+        $lastRootReference = end($matches);
+        if (! is_array($lastRootReference)) {
+            return null;
+        }
+
+        $rootOidRaw = $lastRootReference[1] ?? null;
+        $rootGenerationRaw = $lastRootReference[2] ?? null;
+        if (! is_string($rootOidRaw) || ! is_string($rootGenerationRaw)) {
+            return null;
+        }
+
+        $rootOid = $this->parsePositiveIntWithinRange($rootOidRaw);
+        $rootGeneration = $this->parsePositiveIntWithinRange($rootGenerationRaw);
+        if ($rootOid === null || $rootGeneration === null || $rootOid === 0) {
+            return null;
+        }
+
+        $syntheticTrailer = sprintf('<< /Root %d %d R >>', $rootOid, $rootGeneration);
+
+        try {
+            return (new ObjectParser)->parseString($syntheticTrailer);
+        } catch (Exception) {
+            return null;
+        }
+    }
+
+    /**
+     * Build a synthetic xref table from object headers for malformed files that
+     * contain objects and trailer, but no xref/startxref section.
+     *
+     * @return array<int, int|array{stmoid:int,pos:int}|null>
+     */
+    private function buildSyntheticXrefTableFromObjectHeaders(string $buffer): array
+    {
+        if (preg_match_all('/(?:^|[\r\n])(\d+)\s+(\d+)\s+obj\b/m', $buffer, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) === 0) {
+            return [];
+        }
+
+        $xrefTable = [];
+        $metadata = [];
+
+        foreach ($matches as $match) {
+            $oidRaw = $match[1][0] ?? null;
+            $oidOffset = $match[1][1] ?? null;
+            $generationRaw = $match[2][0] ?? null;
+
+            if (! is_string($oidRaw) || ! is_int($oidOffset) || ! is_string($generationRaw)) {
+                continue;
+            }
+
+            $oid = $this->parsePositiveIntWithinRange($oidRaw);
+            $generation = $this->parsePositiveIntWithinRange($generationRaw);
+            if ($oid === null || $generation === null || $oid === 0) {
+                continue;
+            }
+
+            $current = $metadata[$oid] ?? null;
+            if (! is_array($current)
+                || $generation > $current['generation']
+                || ($generation === $current['generation'] && $oidOffset > $current['offset'])) {
+                $metadata[$oid] = ['generation' => $generation, 'offset' => $oidOffset];
+                $xrefTable[$oid] = $oidOffset;
+            }
+        }
+
+        ksort($xrefTable);
+
+        return $xrefTable;
+    }
+
+    private function parsePositiveIntWithinRange(string $number): ?int
+    {
+        if ($number === '' || ! ctype_digit($number)) {
+            return null;
+        }
+
+        $max = (string) PHP_INT_MAX;
+        if (strlen($number) > strlen($max)) {
+            return null;
+        }
+
+        if (strlen($number) === strlen($max) && strcmp($number, $max) > 0) {
+            return null;
+        }
+
+        return (int) $number;
     }
 }
