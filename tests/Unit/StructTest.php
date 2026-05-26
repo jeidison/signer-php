@@ -370,13 +370,19 @@ final class StructTest extends TestCase
             ->parse();
     }
 
-    public function test_parse_positive_int_within_range_returns_null_for_non_digit_values(): void
+    public function test_parse_throws_when_synthetic_root_reference_contains_non_digit_object_number(): void
     {
-        $method = new \ReflectionMethod(Struct::class, 'parsePositiveIntWithinRange');
-        $method->setAccessible(true);
+        $pdf = "%PDF-1.7\n"
+            ."1 0 obj <</Root abc 0 R>>\nendobj\n";
 
-        $result = $method->invoke(Struct::new(), 'abc');
+        $document = new PdfDocument;
+        $document->setBufferFromString($pdf);
 
-        self::assertNull($result);
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('startxref not found');
+
+        Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
     }
 }
