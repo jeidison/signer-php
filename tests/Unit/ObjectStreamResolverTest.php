@@ -699,6 +699,28 @@ final class ObjectStreamResolverTest extends TestCase
         self::assertSame('DATA', $object->getStream());
     }
 
+    public function test_attach_object_stream_if_present_recovers_flate_stream_when_declared_length_is_short(): void
+    {
+        $decoded = '23 0 << /Type /Catalog >>';
+        $payload = gzcompress($decoded);
+        self::assertIsString($payload);
+
+        $declaredLength = strlen($payload) - 2;
+        $buffer = "1 0 obj\n<< /Filter /FlateDecode /Length {$declaredLength} >>\nstream\n"
+            .$payload
+            ."\nendstream\nendobj\n";
+
+        $document = new PdfDocument;
+        $document->setBufferFromString($buffer);
+
+        $offsetEnd = 0;
+        $object = $document->objectFromString(1, 0, $offsetEnd);
+
+        (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
+
+        self::assertSame($decoded, $object->getStream(false));
+    }
+
     #[DataProvider('provideStreamMarkerOffsets')]
     public function test_attach_object_stream_if_present_handles_different_stream_markers(
         string $buffer,
