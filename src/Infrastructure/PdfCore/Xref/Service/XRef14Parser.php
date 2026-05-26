@@ -41,7 +41,25 @@ final class XRef14Parser
         // before the first 'xref' keyword it finds, so the extra prefix is harmless.
         $expandedStart = max(0, $xrefPosition - 512);
         $xrefText = substr($buffer, $expandedStart, $trailerPosition - $expandedStart);
-        $xrefTable = $this->parseEntries($xrefText, $xrefPosition);
+        try {
+            $xrefTable = $this->parseEntries($xrefText, $xrefPosition);
+        } catch (PdfCoreParsingException $exception) {
+            // Regression from large corpus: startxref can point deep into a long table body,
+            // outside the 512-byte backward expansion. Retry from the last standalone xref
+            // keyword before the trailer boundary.
+            if (! str_starts_with($exception->getMessage(), 'Xref tag not found at position ')) {
+                throw $exception;
+            }
+
+            $fallbackPosition = $this->findLastStandaloneXrefBefore($buffer, $trailerPosition);
+            if ($fallbackPosition === null || $fallbackPosition === $xrefPosition) {
+                throw $exception;
+            }
+
+            $xrefPosition = $fallbackPosition;
+            $xrefText = substr($buffer, $xrefPosition, $trailerPosition - $xrefPosition);
+            $xrefTable = $this->parseEntries($xrefText, $xrefPosition);
+        }
 
         $trailer = Trailer::new()
             ->withBuffer($buffer)
@@ -175,6 +193,20 @@ final class XRef14Parser
         }
 
         return null;
+    }
+
+    /**
+     * Return the last standalone `xref` keyword strictly before the given buffer offset.
+     */
+    private function findLastStandaloneXrefBefore(string $buffer, int $beforeOffset): ?int
+    {
+        if ($beforeOffset <= 0) {
+            return null;
+        }
+
+        $window = substr($buffer, 0, $beforeOffset);
+
+        return $this->findLastXrefByScanning($window);
     }
 
     /**
