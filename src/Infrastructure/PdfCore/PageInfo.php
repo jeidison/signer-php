@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace SignerPHP\Infrastructure\PdfCore;
 
+use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreParsingException;
 use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
-use Throwable;
 
 class PageInfo
 {
@@ -189,13 +189,7 @@ class PageInfo
     private function discoverObjects(): array
     {
         $objects = $this->pdfDocument->getPdfObjects();
-        $xrefTable = [];
-
-        try {
-            $xrefTable = $this->pdfDocument->getXrefTable();
-        } catch (Throwable) {
-            $xrefTable = [];
-        }
+        $xrefTable = $this->pdfDocument->getXrefTable();
 
         foreach ($xrefTable as $oid => $entry) {
             $oid = (int) $oid;
@@ -205,7 +199,7 @@ class PageInfo
 
             try {
                 $candidate = $this->pdfDocument->getObject($oid);
-            } catch (Throwable) {
+            } catch (PdfCoreParsingException|PdfCoreStructureException) {
                 continue;
             }
 
