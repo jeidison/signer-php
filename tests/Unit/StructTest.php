@@ -130,4 +130,22 @@ final class StructTest extends TestCase
         // xrefPosition is the offset of the 'xref' keyword, right after the %PDF-1.4\n header (9 bytes).
         self::assertSame(9, $structure->xrefPosition);
     }
+
+    public function test_parse_recovers_xref_at_buffer_start_with_crlf_keyword_when_startxref_is_missing_offset(): void
+    {
+        // Synthetic regression fixture from malformed PDFs: xref starts at byte 0 and uses
+        // CRLF after the keyword, while startxref exists but has no numeric offset.
+        // This forces fallback to the str_starts_with('xref\r\n') branch.
+        $pdf = "xref\r\n0 0\ntrailer\n<< /Size 1 >>\nstartxref\n%%EOF\n%PDF-1.4\n";
+        $document = new PdfDocument;
+        $document->setBufferFromString($pdf);
+
+        $structure = Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+
+        self::assertSame('PDF-1.4', $structure->version);
+        self::assertSame(0, $structure->xrefPosition);
+        self::assertSame([], $structure->xrefTable);
+    }
 }
