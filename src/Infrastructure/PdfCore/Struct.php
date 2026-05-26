@@ -190,10 +190,10 @@ class Struct
             $xrefMatches = $matches[1] ?? [];
             for ($i = count($xrefMatches) - 1; $i >= 0; $i--) {
                 $candidate = $xrefMatches[$i];
-                    if (! is_array($candidate)) {
-                        continue;
-                    }
-                    $xrefOffset = (int) ($candidate[1] ?? 0);
+                if (! is_array($candidate)) {
+                    continue;
+                }
+                $xrefOffset = (int) ($candidate[1] ?? 0);
                 if (strpos($buffer, 'trailer', $xrefOffset) !== false) {
                     return $xrefOffset;
                 }
