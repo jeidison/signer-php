@@ -10,6 +10,7 @@ use SignerPHP\Infrastructure\PdfCore\PDFObject;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueList;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueObject;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
+use SignerPHP\Infrastructure\PdfCore\Service\Ascii85Codec;
 
 final class PDFObjectTest extends TestCase
 {
@@ -107,7 +108,7 @@ final class PDFObjectTest extends TestCase
                 new PDFValueSimple('FlateDecode'),
             ]),
         ]);
-        $object->setStream(self::ascii85Encode($flatePayload));
+        $object->setStream(Ascii85Codec::encode($flatePayload));
 
         self::assertSame('hello world', $object->getStream(false));
     }
@@ -172,36 +173,5 @@ final class PDFObjectTest extends TestCase
         $object->setStream($payload);
 
         self::assertSame('hello world', $object->getStream(false));
-    }
-
-    private static function ascii85Encode(string $data): string
-    {
-        $out = '';
-        $length = strlen($data);
-
-        for ($i = 0; $i < $length; $i += 4) {
-            $chunk = substr($data, $i, 4);
-            $chunkLength = strlen($chunk);
-            if ($chunkLength < 4) {
-                $chunk = str_pad($chunk, 4, "\0", STR_PAD_RIGHT);
-            }
-
-            $value = unpack('N', $chunk)[1];
-            if ($chunkLength === 4 && $value === 0) {
-                $out .= 'z';
-
-                continue;
-            }
-
-            $encoded = '';
-            for ($j = 0; $j < 5; $j++) {
-                $encoded = chr(($value % 85) + 33).$encoded;
-                $value = intdiv($value, 85);
-            }
-
-            $out .= $chunkLength < 4 ? substr($encoded, 0, $chunkLength + 1) : $encoded;
-        }
-
-        return '<~'.$out.'~>';
     }
 }

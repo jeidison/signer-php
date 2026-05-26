@@ -10,6 +10,7 @@ use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValue;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueObject;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
+use SignerPHP\Infrastructure\PdfCore\Service\Ascii85Codec;
 use Stringable;
 
 class PDFObject implements ArrayAccess, Stringable
@@ -258,72 +259,6 @@ endstream
     }
 
     /**
-     * Decode an ASCII85 (Base85) stream into binary bytes.
-     *
-     * @throws PdfCoreParsingException
-     */
-    private static function ascii85DecodeStream(string $stream): string
-    {
-        $stream = trim($stream);
-        if (str_starts_with($stream, '<~') && str_ends_with($stream, '~>')) {
-            $stream = substr($stream, 2, -2);
-        }
-
-        $stream = preg_replace('/\s+/', '', $stream);
-        if (! is_string($stream)) {
-            throw new PdfCoreParsingException('Invalid ASCII85 stream data.');
-        }
-
-        $out = '';
-        $tuple = [];
-        $length = strlen($stream);
-
-        for ($i = 0; $i < $length; $i++) {
-            $ch = $stream[$i];
-
-            if ($ch === 'z') {
-                if ($tuple !== []) {
-                    throw new PdfCoreParsingException('Invalid ASCII85 stream data.');
-                }
-                $out .= "\0\0\0\0";
-
-                continue;
-            }
-
-            $ord = ord($ch);
-            if ($ord < 33 || $ord > 117) {
-                throw new PdfCoreParsingException('Invalid ASCII85 stream data.');
-            }
-
-            $tuple[] = $ord - 33;
-            if (count($tuple) === 5) {
-                $value = 0;
-                foreach ($tuple as $digit) {
-                    $value = ($value * 85) + $digit;
-                }
-                $out .= pack('N', $value);
-                $tuple = [];
-            }
-        }
-
-        if ($tuple !== []) {
-            $originalCount = count($tuple);
-            while (count($tuple) < 5) {
-                $tuple[] = 84;
-            }
-
-            $value = 0;
-            foreach ($tuple as $digit) {
-                $value = ($value * 85) + $digit;
-            }
-
-            $out .= substr(pack('N', $value), 0, $originalCount - 1);
-        }
-
-        return $out;
-    }
-
-    /**
      * @return list<string>
      */
     private static function normalizeFilters(mixed $filterField): array
@@ -373,7 +308,7 @@ endstream
             foreach ($filters as $filterName) {
                 switch ($filterName) {
                     case '/ASCII85Decode':
-                        $decoded = self::ascii85DecodeStream($decoded);
+                        $decoded = Ascii85Codec::decode($decoded);
 
                         break;
                     case '/FlateDecode':
