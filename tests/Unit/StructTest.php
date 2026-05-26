@@ -38,6 +38,90 @@ final class StructTest extends TestCase
         self::assertSame(0, $structure->xrefPosition);
     }
 
+    public function test_parse_accepts_malformed_pdf_a_header_variant(): void
+    {
+        $document = new PdfDocument;
+        $document->setBufferFromString("%PDF-a.4\nstartxref\n0\n%%EOF\n");
+
+        $structure = Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+
+        self::assertSame('PDF-1.4', $structure->version);
+        self::assertSame(0, $structure->xrefPosition);
+    }
+
+    public function test_parse_accepts_header_with_missing_minor_digits(): void
+    {
+        $document = new PdfDocument;
+        $document->setBufferFromString("%PDF-1.\nstartxref\n0\n%%EOF\n");
+
+        $structure = Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+
+        self::assertSame('PDF-1.0', $structure->version);
+        self::assertSame(0, $structure->xrefPosition);
+    }
+
+    public function test_parse_accepts_header_with_integer_only_version_token(): void
+    {
+        $document = new PdfDocument;
+        $document->setBufferFromString("%PDF-2\nstartxref\n0\n%%EOF\n");
+
+        $structure = Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+
+        self::assertSame('PDF-2.0', $structure->version);
+        self::assertSame(0, $structure->xrefPosition);
+    }
+
+    public function test_parse_falls_back_to_default_version_when_header_is_missing_but_structure_is_pdf_like(): void
+    {
+        $pdf = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+            ."2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n"
+            ."trailer\n<< /Root 1 0 R /Size 3 >>\n%%EOF\n";
+
+        $document = new PdfDocument;
+        $document->setBufferFromString($pdf);
+
+        $structure = Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+
+        self::assertSame('PDF-1.4', $structure->version);
+        self::assertSame(0, $structure->xrefPosition);
+        self::assertArrayHasKey(1, $structure->xrefTable);
+        self::assertArrayHasKey(2, $structure->xrefTable);
+    }
+
+    public function test_parse_throws_when_header_token_is_not_normalizable(): void
+    {
+        $document = new PdfDocument;
+        $document->setBufferFromString("%PDF-foo\nstartxref\n0\n%%EOF\n");
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('PDF version not found');
+
+        Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+    }
+
+    public function test_parse_throws_when_header_is_missing_and_buffer_is_not_pdf_like(): void
+    {
+        $document = new PdfDocument;
+        $document->setBufferFromString("not a pdf");
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('PDF version not found');
+
+        Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+    }
+
     public function test_parse_throws_when_neither_startxref_nor_xref_table_found(): void
     {
         $document = new PdfDocument;
@@ -198,6 +282,49 @@ final class StructTest extends TestCase
         self::assertSame('PDF-1.5', $structure->version);
         self::assertSame($xrefOffset, $structure->xrefPosition);
         self::assertSame(9, $structure->xrefTable[1]);
+    }
+
+    public function test_parse_recovers_via_synthetic_structure_when_resolved_xref_is_invalid(): void
+    {
+        $catalog = "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n";
+        $pages = "2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n";
+        $badXrefObject = "5 0 obj\n<< /Type /XRef /W [1 2 1] /Size 2 /Length 4 >>\nstream\nABCD\nendstream\nendobj\n";
+
+        $prefix = "%PDF-1.5\n".$catalog.$pages;
+        $xrefOffset = strlen($prefix);
+        $pdf = $prefix.$badXrefObject
+            ."trailer\n<< /Root 1 0 R /Size 3 >>\n"
+            ."startxref\n{$xrefOffset}\n%%EOF\n";
+
+        $document = new PdfDocument;
+        $document->setBufferFromString($pdf);
+
+        $structure = Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+
+        self::assertSame('PDF-1.5', $structure->version);
+        self::assertSame(0, $structure->xrefPosition);
+        self::assertArrayHasKey(1, $structure->xrefTable);
+        self::assertArrayHasKey(2, $structure->xrefTable);
+    }
+
+    public function test_parse_rethrows_xref_parsing_exception_when_fallback_structure_cannot_be_recovered(): void
+    {
+        $xrefObject = "5 0 obj\n<< /Type /XRef /W [1 2 1] /Size 2 /Length 4 >>\nstream\nABCD\nendstream\nendobj\n";
+        $pdf = "%PDF-1.5\n"
+            .$xrefObject
+            ."startxref\n9\n%%EOF\n";
+
+        $document = new PdfDocument;
+        $document->setBufferFromString($pdf);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Invalid stream for xref table');
+
+        Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
     }
 
     public function test_parse_recovers_trailer_and_object_offsets_when_startxref_and_xref_are_missing(): void
@@ -374,6 +501,22 @@ final class StructTest extends TestCase
     {
         $pdf = "%PDF-1.7\n"
             ."1 0 obj <</Root abc 0 R>>\nendobj\n";
+
+        $document = new PdfDocument;
+        $document->setBufferFromString($pdf);
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('startxref not found');
+
+        Struct::new()
+            ->withPdfDocument($document)
+            ->parse();
+    }
+
+    public function test_parse_throws_when_synthetic_root_reference_contains_non_digit_generation(): void
+    {
+        $pdf = "%PDF-1.7\n"
+            ."1 0 obj <</Root 1 abc R>>\nendobj\n";
 
         $document = new PdfDocument;
         $document->setBufferFromString($pdf);
