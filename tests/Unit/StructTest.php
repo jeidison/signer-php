@@ -519,12 +519,12 @@ final class StructTest extends TestCase
     }
 
     // ----------------------------------------------------------------
-    // Corpus hardening regression tests (problems found at 142/238 baseline)
+    // Corpus hardening regression tests
     // ----------------------------------------------------------------
 
     /**
-     * Problem #3 (8 corpus cases): PDF version marker sits beyond the first 8 KiB
-     * due to a large binary prefix prepended by the producing tool.
+     * PDF version marker sits beyond the first 8 KiB due to a large binary prefix
+     * prepended by the producing tool.
      *
      * Reproduce: 9 KiB of garbage bytes before %PDF-1.6.  resolvePdfVersion() only
      * scans 8192 bytes, so it misses the header and falls back to PDF-1.4 instead
@@ -550,8 +550,8 @@ final class StructTest extends TestCase
     }
 
     /**
-     * Problem #3 variant (producer metadata): Some corpus files have no %PDF- header
-     * at all but embed the version string inside a /Producer or /Creator value.
+     * Some files have no %PDF- header at all but embed the version string inside
+     * a /Producer or /Creator metadata value.
      *
      * Reproduce: buffer contains a /Producer entry that mentions "PDF-1.7" but no
      * %PDF- line.  Current code returns 'PDF-1.4' (generic fallback); it should
@@ -577,14 +577,13 @@ final class StructTest extends TestCase
     }
 
     /**
-     * Problem #5 (4 corpus cases): Trailer /Root is syntactically valid but the
-     * referenced object is absent from the xref table.  Code must locate the
-     * /Type /Catalog object by scanning object headers instead of blindly
-     * trusting the trailer's /Root reference.
+     * Trailer /Root is syntactically valid but the referenced object does not
+     * exist.  Code must locate the /Type /Catalog object by scanning object
+     * headers instead of blindly trusting the trailer's /Root reference.
      *
      * Reproduce: trailer /Root 99 0 R but no object 99 exists; object 1 has
-     * /Type /Catalog.  Current extractSyntheticTrailerFromRootReference() only
-     * looks for /Root refs in the buffer, not for /Type /Catalog directly.
+     * /Type /Catalog.  extractSyntheticTrailerFromRootReference() only looks for
+     * /Root refs in the buffer, not for /Type /Catalog directly.
      */
     public function test_parse_synthesizes_root_from_catalog_type_object_when_trailer_root_is_invalid(): void
     {

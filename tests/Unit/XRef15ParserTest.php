@@ -144,19 +144,18 @@ final class XRef15ParserTest extends TestCase
     }
 
     // ----------------------------------------------------------------
-    // Corpus hardening regression tests (problem #4: invalid xref stream)
+    // Corpus hardening regression tests
     // ----------------------------------------------------------------
 
     /**
-     * Problem #4 (6 corpus cases): /Prev in a 1.5 xref stream points to a classic
-     * xref table, but the bytes at that offset look like `N G obj` (object header).
-     * parsePreviousTable() currently treats any `\d+ \d+ obj` prefix as an xref
-     * stream and calls XRef15Parser::parse(), which throws when the object is not
-     * a valid xref stream.  The exception propagates instead of falling back.
+     * /Prev in a 1.5 xref stream points to a classic xref table, but the bytes
+     * at that offset look like `N G obj` (object header).
+     * parsePreviousTable() treats any `\d+ \d+ obj` prefix as an xref stream
+     * and calls XRef15Parser::parse(), which throws when the object is not a
+     * valid xref stream.  The exception propagates instead of falling back.
      *
-     * Reproduce: /Prev 50, buffer at 50 starts with `1 0 obj` (triggers the xref
-     * stream branch) but objectFromString() throws at that offset.
-     * Expected: parse() returns successfully using the XRef14 fallback path instead.
+     * Reproduce: /Prev offset starts with `1 0 obj` (triggers xref stream branch)
+     * but objectFromString() throws; XRef14 fallback must be attempted instead.
      */
     public function test_parse_falls_back_to_xref14_when_prev_is_classic_table_despite_obj_header_prefix(): void
     {

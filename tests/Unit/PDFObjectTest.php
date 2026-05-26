@@ -325,12 +325,12 @@ final class PDFObjectTest extends TestCase
     }
 
     // ----------------------------------------------------------------
-    // Corpus hardening regression tests (problem #1: FlateDecode failures)
+    // Corpus hardening regression tests
     // ----------------------------------------------------------------
 
     /**
-     * Problem #1 (20 corpus cases): Valid zlib payload preceded by many bytes
-     * containing fake-looking zlib headers that exhaust the scan attempt limit.
+     * Valid zlib payload preceded by many bytes containing fake-looking zlib
+     * headers that exhaust the scan attempt limit.
      *
      * tryInflateWithBoundedPrefixSkip() stops at 2048 bytes (payload beyond).
      * tryInflateByHeaderScan() stops after 64 candidate attempts (64 fake
@@ -360,12 +360,12 @@ final class PDFObjectTest extends TestCase
     }
 
     /**
-     * Problem #1 variant: Valid gzip payload buried after 70 000 bytes of binary
-     * junk. tryInflateByHeaderScan() only scans 65536 bytes, so the gzip magic
-     * bytes are never reached and inflation fails.
+     * Valid gzip payload buried after 70 000 bytes of binary junk.
+     * tryInflateByHeaderScan() only scans 65536 bytes, so the gzip magic bytes
+     * are never reached and inflation fails.
      *
-     * Reproduce: 70 000-byte garbage prefix + valid gzdecode() payload.
-     * Expected: decompressed content returned successfully.
+     * Reproduce: 70 000-byte garbage prefix + valid gzencode() payload.
+     * Expected: decompressed content returned after widening the scan window.
      */
     public function test_get_stream_decodes_flate_with_gzip_header_beyond_65536_byte_scan_window(): void
     {
