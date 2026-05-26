@@ -147,7 +147,8 @@ final class PDFObjectTest extends TestCase
 
     public function test_get_stream_decodes_flate_filter_when_filter_name_is_returned_as_plain_string(): void
     {
-        $filterValue = new class(['Filter' => 'FlateDecode']) extends PDFValueObject {
+        $filterValue = new class(['Filter' => 'FlateDecode']) extends PDFValueObject
+        {
             public function offsetExists($offset): bool
             {
                 return $offset === 'Filter';
