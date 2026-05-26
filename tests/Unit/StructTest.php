@@ -22,6 +22,18 @@ final class StructTest extends TestCase
         ];
     }
 
+    /**
+     * @return array<string, array{string, string}>
+     */
+    public static function malformedPdfHeaderVariants(): array
+    {
+        return [
+            'pdf-a variant' => ["%PDF-a.4\nstartxref\n0\n%%EOF\n", 'PDF-1.4'],
+            'missing minor digits' => ["%PDF-1.\nstartxref\n0\n%%EOF\n", 'PDF-1.0'],
+            'integer-only version token' => ["%PDF-2\nstartxref\n0\n%%EOF\n", 'PDF-2.0'],
+        ];
+    }
+
     #[\PHPUnit\Framework\Attributes\DataProvider('pdfHeaderPrefixVariants')]
     public function test_parse_detects_pdf_version_with_various_header_prefixes(string $pdf): void
     {
@@ -38,42 +50,17 @@ final class StructTest extends TestCase
         self::assertSame(0, $structure->xrefPosition);
     }
 
-    public function test_parse_accepts_malformed_pdf_a_header_variant(): void
+    #[\PHPUnit\Framework\Attributes\DataProvider('malformedPdfHeaderVariants')]
+    public function test_parse_accepts_normalizable_malformed_headers(string $pdf, string $expectedVersion): void
     {
         $document = new PdfDocument;
-        $document->setBufferFromString("%PDF-a.4\nstartxref\n0\n%%EOF\n");
+        $document->setBufferFromString($pdf);
 
         $structure = Struct::new()
             ->withPdfDocument($document)
             ->parse();
 
-        self::assertSame('PDF-1.4', $structure->version);
-        self::assertSame(0, $structure->xrefPosition);
-    }
-
-    public function test_parse_accepts_header_with_missing_minor_digits(): void
-    {
-        $document = new PdfDocument;
-        $document->setBufferFromString("%PDF-1.\nstartxref\n0\n%%EOF\n");
-
-        $structure = Struct::new()
-            ->withPdfDocument($document)
-            ->parse();
-
-        self::assertSame('PDF-1.0', $structure->version);
-        self::assertSame(0, $structure->xrefPosition);
-    }
-
-    public function test_parse_accepts_header_with_integer_only_version_token(): void
-    {
-        $document = new PdfDocument;
-        $document->setBufferFromString("%PDF-2\nstartxref\n0\n%%EOF\n");
-
-        $structure = Struct::new()
-            ->withPdfDocument($document)
-            ->parse();
-
-        self::assertSame('PDF-2.0', $structure->version);
+        self::assertSame($expectedVersion, $structure->version);
         self::assertSame(0, $structure->xrefPosition);
     }
 
