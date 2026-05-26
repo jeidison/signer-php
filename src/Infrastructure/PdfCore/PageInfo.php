@@ -208,6 +208,50 @@ class PageInfo
             }
         }
 
+        return $this->discoverObjectsFromRawBuffer($objects);
+    }
+
+    /**
+     * @param  array<int, PDFObject>  $objects
+     * @return array<int, PDFObject>
+     */
+    private function discoverObjectsFromRawBuffer(array $objects): array
+    {
+        try {
+            $buffer = $this->pdfDocument->getBuffer()->raw();
+        } catch (\Error) {
+            // Some tests create documents without a raw buffer; keep current discoveries.
+            return $objects;
+        }
+
+        if ($buffer === '') {
+            return $objects;
+        }
+
+        if (preg_match_all('/(?:^|[\r\n])(\d+)\s+(\d+)\s+obj\b/m', $buffer, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) === 0) {
+            return $objects;
+        }
+
+        foreach ($matches as $match) {
+            $oid = (int) ($match[1][0] ?? 0);
+            $offset = (int) ($match[1][1] ?? 0);
+
+            if ($oid === 0 || isset($objects[$oid])) {
+                continue;
+            }
+
+            try {
+                $candidate = $this->pdfDocument->findObjectAtOffset($offset, $oid);
+            } catch (PdfCoreParsingException|PdfCoreStructureException) {
+                continue;
+            }
+
+            if ($candidate instanceof PDFObject) {
+                $objects[$oid] = $candidate;
+                $this->pdfDocument->addObject($candidate);
+            }
+        }
+
         return $objects;
     }
 
