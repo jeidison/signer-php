@@ -40,23 +40,50 @@ final class ObjectStreamResolver
             throw new PdfCoreStructureException('Invalid first object position in object stream '.$objstmOid);
         }
 
+        $nValue = $n->asIntOrNull();
+        if ($nValue === null || $nValue < 0) {
+            throw new PdfCoreStructureException('Invalid object count in object stream '.$objstmOid);
+        }
+
         $stream = $objstm->getStream(false);
         $index = substr((string) $stream, 0, $firstValue);
-        // Split on any whitespace (tabs, multiple spaces, newlines) to tolerate
-        // non-conforming generators that don't use single spaces (ISO 32000 §7.5.7).
-        $index = preg_split('/\s+/', trim($index), -1, PREG_SPLIT_NO_EMPTY);
+        preg_match_all('/-?\d+/', $index, $indexMatches);
+        $index = $indexMatches[0] ?? [];
         $stream = substr((string) $stream, $firstValue);
 
-        if (count($index) % 2 !== 0) {
+        $expectedEntries = $nValue * 2;
+        if ($expectedEntries > 0 && count($index) >= $expectedEntries) {
+            $index = array_slice($index, 0, $expectedEntries);
+        }
+
+        if (count($index) < 2 || count($index) % 2 !== 0) {
             throw new PdfCoreParsingException('Invalid index for object stream '.$objstmOid);
         }
 
-        $objpos *= 2;
-        if ($objpos < 0 || ($objpos + 1) >= count($index)) {
+        $pairIndex = $objpos * 2;
+        $offset = null;
+
+        if ($pairIndex >= 0 && ($pairIndex + 1) < count($index)) {
+            $indexedOid = (int) $index[$pairIndex];
+            if ($indexedOid === $oid) {
+                $offset = (int) $index[$pairIndex + 1];
+            }
+        }
+
+        if ($offset === null) {
+            $indexCount = count($index);
+            for ($i = 0; $i + 1 < $indexCount; $i += 2) {
+                if ((int) $index[$i] === $oid) {
+                    $offset = (int) $index[$i + 1];
+                    break;
+                }
+            }
+        }
+
+        if ($offset === null) {
             throw new PdfCoreStructureException(sprintf('Object %s not found in object stream %s.', $oid, $objstmOid));
         }
 
-        $offset = (int) $index[$objpos + 1];
         $offsets = [];
         $counter = count($index);
         for ($i = 1; $i < $counter; $i += 2) {

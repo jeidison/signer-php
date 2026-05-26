@@ -166,6 +166,31 @@ final class ObjectStreamResolverTest extends TestCase
         (new ObjectStreamResolver)->resolveFromObjectStream($document, 99, 0, 20);
     }
 
+    public function test_resolve_from_object_stream_throws_when_n_is_not_numeric(): void
+    {
+        $objectStream = new PDFObject(99, [
+            'Type' => '/ObjStm',
+            'First' => 5,
+            'N' => 'abc',
+        ]);
+        $objectStream->setStream('20 0 << /Type /Catalog >>');
+
+        $document = new class($objectStream) extends PdfDocument
+        {
+            public function __construct(private readonly PDFObject $objectStream) {}
+
+            public function findObject(int $oid): ?PDFObject
+            {
+                return $oid === 99 ? $this->objectStream : null;
+            }
+        };
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Invalid object count in object stream 99');
+
+        (new ObjectStreamResolver)->resolveFromObjectStream($document, 99, 0, 20);
+    }
+
     public function test_resolve_from_object_stream_throws_for_invalid_index_pairs(): void
     {
         $objectStream = new PDFObject(99, [
@@ -191,6 +216,58 @@ final class ObjectStreamResolverTest extends TestCase
         (new ObjectStreamResolver)->resolveFromObjectStream($document, 99, 0, 20);
     }
 
+    public function test_resolve_from_object_stream_ignores_extra_non_numeric_index_token(): void
+    {
+        $index = '20 0 junk ';
+        $objectStream = new PDFObject(99, [
+            'Type' => '/ObjStm',
+            'First' => strlen($index),
+            'N' => 1,
+        ]);
+        $objectStream->setStream($index.'<< /Type /Catalog >>');
+
+        $document = new class($objectStream) extends PdfDocument
+        {
+            public function __construct(private readonly PDFObject $objectStream) {}
+
+            public function findObject(int $oid): ?PDFObject
+            {
+                return $oid === 99 ? $this->objectStream : null;
+            }
+        };
+
+        $resolved = (new ObjectStreamResolver)->resolveFromObjectStream($document, 99, 0, 20);
+
+        self::assertSame('Catalog', $resolved['Type']->val());
+    }
+
+    public function test_resolve_from_object_stream_falls_back_to_lookup_by_object_id_when_position_mismatches(): void
+    {
+        $index = '9 0 20 5 ';
+        $payload = 'null << /Type /Catalog >>';
+        $objectStream = new PDFObject(99, [
+            'Type' => '/ObjStm',
+            'First' => strlen($index),
+            'N' => 2,
+        ]);
+        $objectStream->setStream($index.$payload);
+
+        $document = new class($objectStream) extends PdfDocument
+        {
+            public function __construct(private readonly PDFObject $objectStream) {}
+
+            public function findObject(int $oid): ?PDFObject
+            {
+                return $oid === 99 ? $this->objectStream : null;
+            }
+        };
+
+        $resolved = (new ObjectStreamResolver)->resolveFromObjectStream($document, 99, 0, 20);
+
+        self::assertSame(20, $resolved->getOid());
+        self::assertSame('Catalog', $resolved['Type']->val());
+    }
+
     public function test_resolve_from_object_stream_throws_when_object_position_is_out_of_range(): void
     {
         $objectStream = new PDFObject(99, [
@@ -211,9 +288,9 @@ final class ObjectStreamResolverTest extends TestCase
         };
 
         $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Object 20 not found in object stream 99.');
+        $this->expectExceptionMessage('Object 30 not found in object stream 99.');
 
-        (new ObjectStreamResolver)->resolveFromObjectStream($document, 99, 2, 20);
+        (new ObjectStreamResolver)->resolveFromObjectStream($document, 99, 2, 30);
     }
 
     public function test_resolve_from_object_stream_throws_for_invalid_inner_offset(): void

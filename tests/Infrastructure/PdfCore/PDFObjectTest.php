@@ -97,6 +97,46 @@ final class PDFObjectTest extends TestCase
         self::assertSame('hello world', $object->getStream(false));
     }
 
+    public function test_get_stream_decodes_flate_stream_with_long_non_whitespace_prefix(): void
+    {
+        // Some malformed fixtures leak long garbage prefixes before a valid Flate payload.
+        // Recovery must not be limited to tiny prefix lengths.
+        $payload = gzcompress('hello world');
+        self::assertIsString($payload);
+
+        $prefix = str_repeat('X', 128);
+        $object = new PDFObject(1, ['Filter' => new PDFValueSimple('/FlateDecode')]);
+        $object->setStream($prefix.$payload);
+
+        self::assertSame('hello world', $object->getStream(false));
+    }
+
+    public function test_get_stream_decodes_flate_stream_with_very_long_non_whitespace_prefix(): void
+    {
+        // Corpus-derived hardening: some streams contain kilobytes of junk bytes before
+        // the actual Flate payload. Decoder should recover without requiring exact offset.
+        $payload = gzcompress('hello world');
+        self::assertIsString($payload);
+
+        $prefix = str_repeat('X', 4096);
+        $object = new PDFObject(1, ['Filter' => new PDFValueSimple('/FlateDecode')]);
+        $object->setStream($prefix.$payload);
+
+        self::assertSame('hello world', $object->getStream(false));
+    }
+
+    public function test_get_stream_decodes_flate_stream_with_trailing_garbage_bytes(): void
+    {
+        // Some malformed PDFs include non-compressed bytes after a valid Flate payload.
+        $payload = gzcompress('hello world');
+        self::assertIsString($payload);
+
+        $object = new PDFObject(1, ['Filter' => new PDFValueSimple('/FlateDecode')]);
+        $object->setStream($payload."\nTRAILER");
+
+        self::assertSame('hello world', $object->getStream(false));
+    }
+
     public function test_get_stream_decodes_ascii85_then_flate_filter_chain(): void
     {
         $flatePayload = gzcompress('hello world');
