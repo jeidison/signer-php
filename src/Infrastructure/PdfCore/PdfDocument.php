@@ -29,7 +29,7 @@ class PdfDocument
 
     protected int $xrefPosition;
 
-    protected array $xrefTable;
+    protected array $xrefTable = [];
 
     /** @var array<int, XrefEntry> */
     protected array $xrefEntries = [];
