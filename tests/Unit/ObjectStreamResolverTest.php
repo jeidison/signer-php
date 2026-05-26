@@ -765,95 +765,94 @@ final class ObjectStreamResolverTest extends TestCase
         self::assertSame('', $object->getStream());
     }
 
-    public function test_recover_stream_data_when_length_is_short_returns_declared_data_when_endstream_is_missing(): void
+    public function test_attach_object_stream_if_present_keeps_declared_data_when_endstream_is_missing_for_flate(): void
     {
-        $resolver = new ObjectStreamResolver;
-        $method = new \ReflectionMethod(ObjectStreamResolver::class, 'recoverStreamDataWhenLengthIsShort');
-        $method->setAccessible(true);
+        $declaredData = 'invalid-flate-data';
+        $buffer = "1 0 obj\n<< /Filter /FlateDecode /Length ".strlen($declaredData)." >>\nstream\n"
+            .$declaredData
+            ."\nendobj\n";
 
-        $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
-        $declaredData = "invalid-flate-data";
-        $buffer = "stream\n{$declaredData}\ntruncated";
+        $document = new PdfDocument;
+        $document->setBufferFromString($buffer);
 
-        $result = $method->invoke($resolver, $buffer, 7, $declaredData, $object);
+        $offsetEnd = 0;
+        $object = $document->objectFromString(1, 0, $offsetEnd);
+        (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
 
-        self::assertSame($declaredData, $result);
+        self::assertSame($declaredData, $object->getStream());
     }
 
-    public function test_recover_stream_data_when_length_is_short_uses_decodable_candidate_until_endstream(): void
+    public function test_attach_object_stream_if_present_recovers_when_filter_array_contains_flate_decode(): void
     {
-        $resolver = new ObjectStreamResolver;
-        $method = new \ReflectionMethod(ObjectStreamResolver::class, 'recoverStreamDataWhenLengthIsShort');
-        $method->setAccessible(true);
-
         $decoded = '23 0 << /Type /Catalog >>';
-        $fullPayload = gzcompress($decoded);
-        self::assertIsString($fullPayload);
+        $payload = gzcompress($decoded);
+        self::assertIsString($payload);
 
-        $declaredData = substr($fullPayload, 0, max(1, strlen($fullPayload) - 10));
-        $buffer = $fullPayload."\nendstream\n";
-        $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
+        $declaredLength = max(1, strlen($payload) - 10);
+        $buffer = "1 0 obj\n<< /Filter [/FlateDecode] /Length {$declaredLength} >>\nstream\n"
+            .$payload
+            ."\nendstream\nendobj\n";
 
-        $result = $method->invoke($resolver, $buffer, 0, $declaredData, $object);
+        $document = new PdfDocument;
+        $document->setBufferFromString($buffer);
 
-        self::assertNotSame($declaredData, $result);
+        $offsetEnd = 0;
+        $object = $document->objectFromString(1, 0, $offsetEnd);
+        (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
 
-        $probe = new PDFObject(10, ['Filter' => '/FlateDecode']);
-        $probe->setStream($result, true);
-        self::assertSame($decoded, $probe->getStream(false));
+        self::assertSame($decoded, $object->getStream(false));
     }
 
-    public function test_recover_stream_data_when_length_is_short_returns_declared_when_candidate_exceeds_guard_limit(): void
+    public function test_attach_object_stream_if_present_does_not_recover_when_filter_array_has_no_flate_decode(): void
     {
-        $resolver = new ObjectStreamResolver;
-        $method = new \ReflectionMethod(ObjectStreamResolver::class, 'recoverStreamDataWhenLengthIsShort');
-        $method->setAccessible(true);
+        $declaredData = 'NOT_ASCII85_PAYLOAD';
+        $buffer = "1 0 obj\n<< /Filter [/ASCII85Decode /LZWDecode] /Length ".strlen($declaredData)." >>\nstream\n"
+            .$declaredData
+            .str_repeat('A', 300)
+            ."\nendstream\nendobj\n";
 
+        $document = new PdfDocument;
+        $document->setBufferFromString($buffer);
+
+        $offsetEnd = 0;
+        $object = $document->objectFromString(1, 0, $offsetEnd);
+        (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
+
+        self::assertSame($declaredData, $object->getStream());
+    }
+
+    public function test_attach_object_stream_if_present_keeps_declared_data_when_candidate_trims_to_same_size(): void
+    {
         $declaredData = 'invalid-flate-data';
-        $buffer = $declaredData.str_repeat('A', 300).'endstream';
-        $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
+        $buffer = "1 0 obj\n<< /Filter /FlateDecode /Length ".strlen($declaredData)." >>\nstream\n"
+            .$declaredData
+            ."\nendstream\nendobj\n";
 
-        $result = $method->invoke($resolver, $buffer, 0, $declaredData, $object);
+        $document = new PdfDocument;
+        $document->setBufferFromString($buffer);
 
-        self::assertSame($declaredData, $result);
+        $offsetEnd = 0;
+        $object = $document->objectFromString(1, 0, $offsetEnd);
+        (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
+
+        self::assertSame($declaredData, $object->getStream());
     }
 
-    public function test_recover_stream_data_when_length_is_short_returns_declared_when_trimmed_candidate_is_not_longer(): void
+    public function test_attach_object_stream_if_present_keeps_declared_data_when_flate_candidate_exceeds_guard_limit(): void
     {
-        $resolver = new ObjectStreamResolver;
-        $method = new \ReflectionMethod(ObjectStreamResolver::class, 'recoverStreamDataWhenLengthIsShort');
-        $method->setAccessible(true);
-
         $declaredData = 'invalid-flate-data';
-        $buffer = $declaredData."\nendstream";
-        $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
+        $buffer = "1 0 obj\n<< /Filter /FlateDecode /Length ".strlen($declaredData)." >>\nstream\n"
+            .$declaredData
+            .str_repeat('A', 300)
+            ."\nendstream\nendobj\n";
 
-        $result = $method->invoke($resolver, $buffer, 0, $declaredData, $object);
+        $document = new PdfDocument;
+        $document->setBufferFromString($buffer);
 
-        self::assertSame($declaredData, $result);
-    }
+        $offsetEnd = 0;
+        $object = $document->objectFromString(1, 0, $offsetEnd);
+        (new ObjectStreamResolver)->attachObjectStreamIfPresent($document, $object, $offsetEnd, 1);
 
-    public function test_uses_flate_decode_handles_filter_array_values(): void
-    {
-        $resolver = new ObjectStreamResolver;
-        $method = new \ReflectionMethod(ObjectStreamResolver::class, 'usesFlateDecode');
-        $method->setAccessible(true);
-
-        $withoutFlate = new PDFObject(1, ['Filter' => ['/ASCII85Decode', '/LZWDecode']]);
-        $withFlate = new PDFObject(2, ['Filter' => ['/ASCII85Decode', '/FlateDecode']]);
-
-        self::assertFalse($method->invoke($resolver, $withoutFlate));
-        self::assertTrue($method->invoke($resolver, $withFlate));
-    }
-
-    public function test_can_decode_stream_returns_false_when_probe_throws_for_invalid_flate_data(): void
-    {
-        $resolver = new ObjectStreamResolver;
-        $method = new \ReflectionMethod(ObjectStreamResolver::class, 'canDecodeStream');
-        $method->setAccessible(true);
-
-        $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
-
-        self::assertFalse($method->invoke($resolver, $object, 'invalid-flate-data'));
+        self::assertSame($declaredData, $object->getStream());
     }
 }
