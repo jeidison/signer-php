@@ -100,10 +100,13 @@ final class XrefTest extends TestCase
     public static function parseFailureCases(): array
     {
         return [
-            'xref position beyond end of file' => [
+            'xref position beyond end of file, backward scan recovers but trailer incomplete' => [
+                // startxref offset is beyond EOF; backward scan finds xref at position 0 and
+                // starts parsing, but the trailer dict has no 'startxref' token following it,
+                // causing Trailer::getTrailer() to fail.
                 "xref\n0 1\n0000000000 65535 f \ntrailer",
                 10_000,
-                'beyond end of file',
+                'Trailer not found.',
             ],
             'stream fallback for ambiguous content without trailer' => [
                 "garbage-at-start\n1 0 obj\n<< /Type /Catalog >>\nendobj\n",
