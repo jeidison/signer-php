@@ -177,7 +177,8 @@ final class XRef15ParserTest extends TestCase
         $currentObject['Prev'] = $prevPosition;
 
         // The document stub: offset 0 is not a real xref stream object.
-        $document = new class($currentObject, $classicXrefBuffer) extends PdfDocument {
+        $document = new class($currentObject, $classicXrefBuffer) extends PdfDocument
+        {
             public function __construct(
                 private readonly PDFObject $current,
                 string $buffer

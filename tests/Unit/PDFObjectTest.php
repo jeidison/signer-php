@@ -345,11 +345,11 @@ final class PDFObjectTest extends TestCase
         // The header scan finds candidates at offsets 40, 80, …, 2560 → exactly
         // 64 attempts, all failing.  The 65th fake block at 2560 exhausts the
         // limit; the real payload at offset 2600 is never reached.
-        $fakeBlock = "\x78\x9C" . str_repeat("\xFF", 38); // 40 bytes: valid-looking header + garbage
+        $fakeBlock = "\x78\x9C".str_repeat("\xFF", 38); // 40 bytes: valid-looking header + garbage
         $garbage = str_repeat($fakeBlock, 65); // 2600 bytes, provides exactly 64 scan candidates
 
         $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
-        $object->setStream($garbage . $validZlib);
+        $object->setStream($garbage.$validZlib);
 
         // Must decompress even after exhausting the old 64-attempt limit
         self::assertSame($expected, $object->getStream(false));
