@@ -41,25 +41,18 @@ final class XRef14Parser
         // before the first 'xref' keyword it finds, so the extra prefix is harmless.
         $expandedStart = max(0, $xrefPosition - 512);
         $xrefText = substr($buffer, $expandedStart, $trailerPosition - $expandedStart);
-        try {
-            $xrefTable = $this->parseEntries($xrefText, $xrefPosition);
-        } catch (PdfCoreParsingException $exception) {
-            // Regression from large corpus: startxref can point deep into a long table body,
-            // outside the 512-byte backward expansion. Retry from the last standalone xref
-            // keyword before the trailer boundary.
-            if (! str_starts_with($exception->getMessage(), 'Xref tag not found at position ')) {
-                throw $exception;
-            }
-
+        // Regression from large corpus: startxref can point deep into a long table body,
+        // outside the 512-byte backward expansion. Avoid exception-driven flow by checking
+        // upfront whether this window contains a standalone xref keyword.
+        if (! $this->containsStandaloneXrefKeyword($xrefText)) {
             $fallbackPosition = $this->findLastStandaloneXrefBefore($buffer, $trailerPosition);
-            if ($fallbackPosition === null || $fallbackPosition === $xrefPosition) {
-                throw $exception;
+            if ($fallbackPosition !== null && $fallbackPosition !== $xrefPosition) {
+                $xrefPosition = $fallbackPosition;
+                $xrefText = substr($buffer, $xrefPosition, $trailerPosition - $xrefPosition);
             }
-
-            $xrefPosition = $fallbackPosition;
-            $xrefText = substr($buffer, $xrefPosition, $trailerPosition - $xrefPosition);
-            $xrefTable = $this->parseEntries($xrefText, $xrefPosition);
         }
+
+        $xrefTable = $this->parseEntries($xrefText, $xrefPosition);
 
         $trailer = Trailer::new()
             ->withBuffer($buffer)
@@ -207,6 +200,24 @@ final class XRef14Parser
         $window = substr($buffer, 0, $beforeOffset);
 
         return $this->findLastXrefByScanning($window);
+    }
+
+    /**
+     * Detect whether the provided text contains a standalone `xref` keyword
+     * (followed by whitespace or end-of-string).
+     */
+    private function containsStandaloneXrefKeyword(string $text): bool
+    {
+        $searchOffset = 0;
+        while (($pos = strpos($text, 'xref', $searchOffset)) !== false) {
+            $after = $pos + 4;
+            if ($after >= strlen($text) || ctype_space($text[$after])) {
+                return true;
+            }
+            $searchOffset = $pos + 1;
+        }
+
+        return false;
     }
 
     /**
