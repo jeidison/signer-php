@@ -9,6 +9,7 @@ use SignerPHP\Infrastructure\PdfCore\PageDescriptor;
 use SignerPHP\Infrastructure\PdfCore\PageInfo;
 use SignerPHP\Infrastructure\PdfCore\PdfDocument;
 use SignerPHP\Infrastructure\PdfCore\PDFObject;
+use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueSimple;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueObject;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValueReference;
 
@@ -119,6 +120,63 @@ final class PageInfoTest extends TestCase
             ->acquirePagesInfo();
     }
 
+    public function test_acquire_pages_info_falls_back_to_catalog_object_when_trailer_root_is_invalid(): void
+    {
+        $document = new PdfDocument;
+        $document->setTrailerObject(new PDFValueObject([
+            'Root' => new PDFValueReference(99),
+        ]));
+        $document->addObject(new PDFObject(1, [
+            'Type' => '/Catalog',
+            'Pages' => new PDFValueReference(2),
+        ]));
+        $document->addObject(new PDFObject(2, [
+            'Type' => '/Pages',
+            'Kids' => [3],
+            'Count' => 1,
+        ]));
+        $document->addObject(new PDFObject(3, [
+            'Type' => '/Page',
+            'Parent' => new PDFValueReference(2),
+            'MediaBox' => [0, 0, 10, 10],
+        ]));
+
+        $pageInfo = PageInfo::new()
+            ->withPdfDocument($document)
+            ->acquirePagesInfo();
+
+        self::assertNotNull($pageInfo->getPage(0));
+    }
+
+    public function test_acquire_pages_info_falls_back_to_pages_object_when_catalog_pages_reference_is_invalid(): void
+    {
+        $document = new PdfDocument;
+        $document->setTrailerObject(new PDFValueObject([
+            'Root' => new PDFValueReference(1),
+        ]));
+        $document->addObject(new PDFObject(1, [
+            'Type' => '/Catalog',
+            'Pages' => new PDFValueReference(99),
+        ]));
+        $document->addObject(new PDFObject(2, [
+            'Type' => '/Pages',
+            'Parent' => new PDFValueReference(1),
+            'Kids' => [3],
+            'Count' => 1,
+        ]));
+        $document->addObject(new PDFObject(3, [
+            'Type' => '/Page',
+            'Parent' => new PDFValueReference(2),
+            'MediaBox' => [0, 0, 10, 10],
+        ]));
+
+        $pageInfo = PageInfo::new()
+            ->withPdfDocument($document)
+            ->acquirePagesInfo();
+
+        self::assertNotNull($pageInfo->getPage(0));
+    }
+
     public function test_acquire_pages_info_fails_when_catalog_has_no_pages_reference(): void
     {
         $document = new PdfDocument;
@@ -195,6 +253,108 @@ final class PageInfoTest extends TestCase
         PageInfo::new()
             ->withPdfDocument($document)
             ->acquirePagesInfo();
+    }
+
+    public function test_acquire_pages_info_derives_kids_from_parent_reference_when_kids_list_is_missing(): void
+    {
+        $document = new PdfDocument;
+        $document->setTrailerObject(new PDFValueObject([
+            'Root' => new PDFValueReference(1),
+        ]));
+        $document->addObject(new PDFObject(1, [
+            'Type' => '/Catalog',
+            'Pages' => new PDFValueReference(2),
+        ]));
+        $document->addObject(new PDFObject(2, [
+            'Type' => '/Pages',
+            'Count' => 1,
+        ]));
+        $document->addObject(new PDFObject(3, [
+            'Type' => '/Page',
+            'Parent' => new PDFValueReference(2),
+            'MediaBox' => [0, 0, 10, 10],
+        ]));
+
+        $pageInfo = PageInfo::new()
+            ->withPdfDocument($document)
+            ->acquirePagesInfo();
+
+        self::assertNotNull($pageInfo->getPage(0));
+    }
+
+    public function test_acquire_pages_info_falls_back_when_root_reference_is_array_and_discovers_objects_from_xref_table(): void
+    {
+        $document = new class extends PdfDocument
+        {
+            public function __construct()
+            {
+                $this->setTrailerObject(new PDFValueObject([
+                    'Root' => new class(0) extends PDFValueSimple
+                    {
+                        public function asObjectReferenceOrNull(): int|array|null
+                        {
+                            return [1, 0];
+                        }
+                    },
+                ]));
+            }
+
+            public function getPdfObjects(): array
+            {
+                return [
+                    1 => new PDFObject(1, ['Type' => '/Catalog', 'Pages' => new PDFValueReference(2)]),
+                ];
+            }
+
+            public function getXrefTable(): array
+            {
+                return [0 => 0, 1 => 10, 2 => 20, 3 => 30, 4 => 40];
+            }
+
+            public function getObject(int $oid, bool $originalVersion = false): ?PDFObject
+            {
+                return match ($oid) {
+                    2 => new PDFObject(2, ['Type' => '/Pages', 'Count' => 1]),
+                    3 => new PDFObject(3, ['Type' => '/Page', 'Parent' => new PDFValueReference(2), 'MediaBox' => [0, 0, 10, 10]]),
+                    4 => throw new \RuntimeException('synthetic xref read failure'),
+                    default => null,
+                };
+            }
+        };
+
+        $pageInfo = PageInfo::new()
+            ->withPdfDocument($document)
+            ->acquirePagesInfo();
+
+        self::assertNotNull($pageInfo->getPage(0));
+    }
+
+    public function test_acquire_pages_info_ignores_visited_child_when_deriving_kids_from_parent_reference(): void
+    {
+        $document = new PdfDocument;
+        $document->setTrailerObject(new PDFValueObject([
+            'Root' => new PDFValueReference(1),
+        ]));
+        $document->addObject(new PDFObject(1, [
+            'Type' => '/Catalog',
+            'Pages' => new PDFValueReference(2),
+        ]));
+        $document->addObject(new PDFObject(2, [
+            'Type' => '/Pages',
+            'Parent' => new PDFValueReference(2),
+            'Count' => 1,
+        ]));
+        $document->addObject(new PDFObject(3, [
+            'Type' => '/Page',
+            'Parent' => new PDFValueReference(2),
+            'MediaBox' => [0, 0, 10, 10],
+        ]));
+
+        $pageInfo = PageInfo::new()
+            ->withPdfDocument($document)
+            ->acquirePagesInfo();
+
+        self::assertNotNull($pageInfo->getPage(0));
     }
 
     public function test_get_page_size_returns_null_for_negative_index(): void
