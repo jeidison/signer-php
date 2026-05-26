@@ -203,59 +203,125 @@ endstream
      */
     private static function inflateFlateStream(string $stream): string
     {
-        $attemptInflate = static function (string $candidate): ?string {
-            $b0 = strlen($candidate) > 1 ? ord($candidate[0]) : -1;
-            $b1 = strlen($candidate) > 1 ? ord($candidate[1]) : -1;
-
-            // Gzip: magic bytes 0x1F 0x8B (RFC 1952). Try first when headers match.
-            if ($b0 === 0x1F && $b1 === 0x8B) {
-                $inflated = @gzdecode($candidate);
-                if (is_string($inflated)) {
-                    return $inflated;
-                }
-                // Fall through — misdetected gzip header; try other codecs below.
-            }
-
-            // zlib (RFC 1950): works for conforming PDF generators and some edge cases.
-            $inflated = @gzuncompress($candidate);
-            if (is_string($inflated)) {
-                return $inflated;
-            }
-
-            // Raw deflate (RFC 1951): no wrapper header; fallback for non-conforming generators.
-            $inflated = @gzinflate($candidate);
-            if (is_string($inflated)) {
-                return $inflated;
-            }
-
-            return null;
-        };
-
-        $inflated = $attemptInflate($stream);
+        $inflated = self::attemptInflateCandidate($stream);
         if (is_string($inflated)) {
             return $inflated;
         }
 
-        // Non-conforming PDFs may leak one or more leading bytes before the compressed payload.
-        $trimmed = ltrim($stream, "\x00\x09\x0A\x0C\x0D\x20");
-        if ($trimmed !== $stream) {
-            $inflated = $attemptInflate($trimmed);
-            if (is_string($inflated)) {
-                return $inflated;
-            }
+        $inflated = self::tryInflateAfterWhitespaceTrim($stream);
+        if (is_string($inflated)) {
+            return $inflated;
         }
 
-        // Additional hardening: attempt to recover when arbitrary non-whitespace bytes
-        // precede a valid compressed payload (seen in malformed corpus fixtures).
-        $maxSkip = min(64, max(0, strlen($stream) - 2));
-        for ($skip = 1; $skip <= $maxSkip; $skip++) {
-            $inflated = $attemptInflate(substr($stream, $skip));
-            if (is_string($inflated)) {
-                return $inflated;
-            }
+        $inflated = self::tryInflateWithBoundedPrefixSkip($stream);
+        if (is_string($inflated)) {
+            return $inflated;
+        }
+
+        $inflated = self::tryInflateByHeaderScan($stream);
+        if (is_string($inflated)) {
+            return $inflated;
         }
 
         throw new PdfCoreParsingException('Failed to inflate FlateDecode stream.');
+    }
+
+    private static function attemptInflateCandidate(string $candidate): ?string
+    {
+        $b0 = strlen($candidate) > 1 ? ord($candidate[0]) : -1;
+        $b1 = strlen($candidate) > 1 ? ord($candidate[1]) : -1;
+
+        // Gzip: magic bytes 0x1F 0x8B (RFC 1952). Try first when headers match.
+        if (self::isGzipHeader($b0, $b1)) {
+            $inflated = @gzdecode($candidate);
+            if (is_string($inflated)) {
+                return $inflated;
+            }
+            // Fall through — misdetected gzip header; try other codecs below.
+        }
+
+        // zlib (RFC 1950): works for conforming PDF generators and some edge cases.
+        $inflated = @gzuncompress($candidate);
+        if (is_string($inflated)) {
+            return $inflated;
+        }
+
+        // Raw deflate (RFC 1951): no wrapper header; fallback for non-conforming generators.
+        $inflated = @gzinflate($candidate);
+        if (is_string($inflated)) {
+            return $inflated;
+        }
+
+        return null;
+    }
+
+    private static function tryInflateAfterWhitespaceTrim(string $stream): ?string
+    {
+        // Non-conforming PDFs may leak one or more leading bytes before the compressed payload.
+        $trimmed = ltrim($stream, "\x00\x09\x0A\x0C\x0D\x20");
+        if ($trimmed === $stream) {
+            return null;
+        }
+
+        return self::attemptInflateCandidate($trimmed);
+    }
+
+    private static function tryInflateWithBoundedPrefixSkip(string $stream): ?string
+    {
+        // Additional hardening: attempt to recover when arbitrary non-whitespace bytes
+        // precede a valid compressed payload (seen in malformed corpus fixtures).
+        // Keep a bounded search window to avoid pathological CPU cost on huge streams.
+        $maxSkip = min(2048, max(0, strlen($stream) - 2));
+        for ($skip = 1; $skip <= $maxSkip; $skip++) {
+            $inflated = self::attemptInflateCandidate(substr($stream, $skip));
+            if (is_string($inflated)) {
+                return $inflated;
+            }
+        }
+
+        return null;
+    }
+
+    private static function tryInflateByHeaderScan(string $stream): ?string
+    {
+        // If the compressed payload starts far from the stream start, blind linear probing
+        // is too expensive. Scan a bounded prefix for plausible zlib/gzip headers first.
+        $streamLength = strlen($stream);
+        $maxHeaderScan = min(65536, max(0, $streamLength - 2));
+        $attempts = 0;
+
+        for ($offset = 1; $offset <= $maxHeaderScan; $offset++) {
+            $b0 = ord($stream[$offset]);
+            $b1 = ord($stream[$offset + 1]);
+
+            if (! self::isGzipHeader($b0, $b1) && ! self::isPlausibleZlibHeader($b0, $b1)) {
+                continue;
+            }
+
+            $attempts++;
+            $inflated = self::attemptInflateCandidate(substr($stream, $offset));
+            if (is_string($inflated)) {
+                return $inflated;
+            }
+
+            // Keep this fallback bounded to avoid excessive decompression attempts.
+            if ($attempts >= 64) {
+                break;
+            }
+        }
+
+        return null;
+    }
+
+    private static function isGzipHeader(int $b0, int $b1): bool
+    {
+        return $b0 === 0x1F && $b1 === 0x8B;
+    }
+
+    private static function isPlausibleZlibHeader(int $b0, int $b1): bool
+    {
+        return ($b0 & 0x0F) === 0x08
+            && ((($b0 << 8) + $b1) % 31) === 0;
     }
 
     /**
