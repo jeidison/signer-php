@@ -116,18 +116,21 @@ final class Ascii85Codec
     private static function extractEncodedPayload(string $stream): string
     {
         $start = strpos($stream, '<~');
-        $end = strrpos($stream, '~>');
+        $end = strpos($stream, '~>');
 
-        if ($start !== false && $end !== false && $end > ($start + 1)) {
-            return substr($stream, $start + 2, $end - ($start + 2));
+        if ($start !== false) {
+            $startContent = $start + 2;
+            $endAfterStart = strpos($stream, '~>', $startContent);
+
+            if ($endAfterStart !== false && $endAfterStart >= $startContent) {
+                return substr($stream, $startContent, $endAfterStart - $startContent);
+            }
+
+            return substr($stream, $startContent);
         }
 
-        if (str_starts_with($stream, '<~') && str_ends_with($stream, '~>')) {
-            return substr($stream, 2, -2);
-        }
-
-        if (str_ends_with($stream, '~>')) {
-            return substr($stream, 0, -2);
+        if ($end !== false) {
+            return substr($stream, 0, $end);
         }
 
         return $stream;

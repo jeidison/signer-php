@@ -120,6 +120,23 @@ final class Ascii85CodecTest extends TestCase
         self::assertSame('abc', Ascii85Codec::decode($decorated));
     }
 
+    /** @return array<string, array{string, string}> */
+    public static function acceptedNonCanonicalPayloads(): array
+    {
+        return [
+            'terminator only with trailing noise' => ['@:E^~>suffix_after_terminator', 'abc'],
+            'start delimiter without terminator' => ['<~@:E^', 'abc'],
+            'prefixed and suffixed wrappers' => ['garbage<~@:E^~>trailer', 'abc'],
+            'single encoded block between noisy text' => ['header<~z~>footer', "\0\0\0\0"],
+        ];
+    }
+
+    #[DataProvider('acceptedNonCanonicalPayloads')]
+    public function test_decode_accepts_non_canonical_but_recoverable_stream_shapes(string $encoded, string $expected): void
+    {
+        self::assertSame($expected, Ascii85Codec::decode($encoded));
+    }
+
     public function test_encode_uses_z_shortcut_for_four_null_bytes(): void
     {
         self::assertSame('<~z~>', Ascii85Codec::encode("\0\0\0\0"));
@@ -152,6 +169,8 @@ final class Ascii85CodecTest extends TestCase
             'btoa y shorthand is unsupported' => ['y'],
             'out of range byte after valid tuple' => ['!!!!!{'],
             'del char out of range' => ["!!!!!\x7F"],
+            'single digit in delimiters' => ['<~@~>'],
+            'single digit with terminator only form' => ['@~>'],
         ];
     }
 
