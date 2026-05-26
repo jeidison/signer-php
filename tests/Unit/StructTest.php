@@ -112,7 +112,7 @@ final class StructTest extends TestCase
     public function test_parse_throws_when_header_is_missing_and_buffer_is_not_pdf_like(): void
     {
         $document = new PdfDocument;
-        $document->setBufferFromString("not a pdf");
+        $document->setBufferFromString('not a pdf');
 
         $this->expectException(\Exception::class);
         $this->expectExceptionMessage('PDF version not found');
