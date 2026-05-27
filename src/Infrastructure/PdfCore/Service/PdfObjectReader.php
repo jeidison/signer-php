@@ -118,9 +118,6 @@ final class PdfObjectReader
 
         foreach (($matches[0] ?? []) as $match) {
             $relativeOffset = (int) ($match[1] ?? -1);
-            if ($relativeOffset < 0) {
-                continue;
-            }
 
             $header = (string) ($match[0] ?? '');
             $leadingWhitespace = strlen($header) - strlen(ltrim($header, "\r\n\x00\x09\x0C\x20"));
@@ -131,10 +128,6 @@ final class PdfObjectReader
                 $bestDistance = $distance;
                 $bestOffset = $candidate;
             }
-        }
-
-        if (! is_int($bestOffset)) {
-            return null;
         }
 
         return $bestOffset;
