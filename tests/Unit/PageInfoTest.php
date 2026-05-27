@@ -233,6 +233,38 @@ final class PageInfoTest extends TestCase
             ->acquirePagesInfo();
     }
 
+    public function test_acquire_pages_info_falls_back_to_loose_page_objects_when_page_tree_is_unresolvable(): void
+    {
+        $document = new PdfDocument;
+        $document->setTrailerObject(new PDFValueObject([
+            'Root' => new PDFValueReference(1),
+        ]));
+        $document->addObject(new PDFObject(1, [
+            'Type' => '/Catalog',
+            'Pages' => new PDFValueReference(578),
+        ]));
+        $document->addObject(new PDFObject(3, [
+            'Type' => '/Page',
+            'MediaBox' => [0, 0, 10, 10],
+        ]));
+
+        $pageInfo = PageInfo::new()
+            ->withPdfDocument($document)
+            ->acquirePagesInfo();
+
+        self::assertNotNull($pageInfo->getPage(0));
+
+        $size = $pageInfo->getPageSize(0);
+        self::assertIsArray($size);
+        self::assertSame(
+            [0, 0, 10, 10],
+            array_map(
+                static fn (mixed $value): mixed => is_object($value) && method_exists($value, 'val') ? $value->val() : $value,
+                $size
+            )
+        );
+    }
+
     public function test_acquire_pages_info_fails_when_page_tree_type_is_missing(): void
     {
         $document = new PdfDocument;
@@ -440,12 +472,11 @@ final class PageInfoTest extends TestCase
             }
         };
 
-        $this->expectException(\Exception::class);
-        $this->expectExceptionMessage('Could not resolve page tree object 2.');
-
-        PageInfo::new()
+        $pageInfo = PageInfo::new()
             ->withPdfDocument($document)
             ->acquirePagesInfo();
+
+        self::assertNotNull($pageInfo->getPage(0));
     }
 
     public function test_get_page_size_returns_null_for_negative_index(): void

@@ -70,7 +70,16 @@ class PageInfo
             throw new PdfCoreStructureException('Could not resolve pages root from document catalog.');
         }
 
-        $this->pagesInfo = $this->getPageInfo($pages, null, []);
+        try {
+            $this->pagesInfo = $this->getPageInfo($pages, null, []);
+        } catch (PdfCoreStructureException $exception) {
+            $fallbackPages = $this->deriveLoosePageDescriptors();
+            if ($fallbackPages === []) {
+                throw $exception;
+            }
+
+            $this->pagesInfo = $fallbackPages;
+        }
 
         return $this;
     }
@@ -165,6 +174,29 @@ class PageInfo
         }
 
         return $fallback;
+    }
+
+    /** @return array<int, PageDescriptor> */
+    private function deriveLoosePageDescriptors(): array
+    {
+        $descriptors = [];
+
+        foreach ($this->discoverObjects() as $candidate) {
+            if ($candidate['Type']?->val() !== 'Page') {
+                continue;
+            }
+
+            $mediaBox = $candidate['MediaBox']?->val();
+            $pageSize = is_array($mediaBox) ? $mediaBox : [];
+            $descriptors[] = new PageDescriptor($candidate->getOid(), $pageSize);
+        }
+
+        usort(
+            $descriptors,
+            static fn (PageDescriptor $left, PageDescriptor $right): int => $left->id <=> $right->id
+        );
+
+        return $descriptors;
     }
 
     /** @return array<int, int> */
