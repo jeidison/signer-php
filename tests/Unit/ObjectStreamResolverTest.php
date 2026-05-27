@@ -247,7 +247,7 @@ final class ObjectStreamResolverTest extends TestCase
         $objectStream = new PDFObject(99, [
             'Type' => '/ObjStm',
             'First' => strlen($index),
-            'N' => 1,
+            'N' => 2,
         ]);
         $objectStream->setStream($index.'<< /Type /Catalog >>');
 
@@ -297,6 +297,33 @@ final class ObjectStreamResolverTest extends TestCase
     {
         $index = '9 0 20 5 ';
         $payload = 'null << /Type /Catalog >>';
+        $objectStream = new PDFObject(99, [
+            'Type' => '/ObjStm',
+            'First' => strlen($index),
+            'N' => 1,
+        ]);
+        $objectStream->setStream($index.$payload);
+
+        $document = new class($objectStream) extends PdfDocument
+        {
+            public function __construct(private readonly PDFObject $objectStream) {}
+
+            public function findObject(int $oid): ?PDFObject
+            {
+                return $oid === 99 ? $this->objectStream : null;
+            }
+        };
+
+        $resolved = (new ObjectStreamResolver)->resolveFromObjectStream($document, 99, 0, 20);
+
+        self::assertSame(20, $resolved->getOid());
+        self::assertSame('Catalog', $resolved['Type']->val());
+    }
+
+    public function test_resolve_from_object_stream_recovers_when_index_has_trailing_orphan_number(): void
+    {
+        $index = '20 0 999 ';
+        $payload = '<< /Type /Catalog >>';
         $objectStream = new PDFObject(99, [
             'Type' => '/ObjStm',
             'First' => strlen($index),
