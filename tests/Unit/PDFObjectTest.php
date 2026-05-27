@@ -376,4 +376,53 @@ final class PDFObjectTest extends TestCase
         // Must find and decompress the gzip payload beyond the 65536-byte window
         self::assertSame($expected, $object->getStream(false));
     }
+
+    public function test_get_stream_decodes_flate_with_gzip_header_beyond_262144_byte_scan_window(): void
+    {
+        $expected = 'corpus-gzip-payload-after-262k-window';
+        $validGzip = gzencode($expected);
+        self::assertIsString($validGzip);
+
+        // 300 000 bytes of non-header junk before a valid gzip payload.
+        // Current bounded header scan at 262 144 cannot reach this offset.
+        $garbage = str_repeat("\x00\x01", 150000); // 300 000 bytes
+
+        $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
+        $object->setStream($garbage.$validGzip);
+
+        self::assertSame($expected, $object->getStream(false));
+    }
+
+    public function test_get_stream_decodes_flate_after_more_than_256_fake_headers(): void
+    {
+        $expected = 'corpus-payload-after-256-fake-headers';
+        $validZlib = gzcompress($expected);
+        self::assertIsString($validZlib);
+
+        // 300 fake zlib headers before the real payload.
+        // A hard cap of 256 decompression attempts misses the valid payload.
+        $fakeBlock = "\x78\x9C".str_repeat("\xFF", 38); // 40 bytes each
+        $garbage = str_repeat($fakeBlock, 300);
+
+        $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
+        $object->setStream($garbage.$validZlib);
+
+        self::assertSame($expected, $object->getStream(false));
+    }
+
+    public function test_get_stream_decodes_raw_deflate_with_non_whitespace_prefix_beyond_2048_bytes(): void
+    {
+        $expected = 'corpus-raw-deflate-after-large-prefix';
+        $rawDeflate = gzdeflate($expected);
+        self::assertIsString($rawDeflate);
+
+        // Prefix contains non-whitespace bytes only, so ltrim() fallback cannot help.
+        // Current bounded prefix probing at 2048 bytes cannot reach the payload.
+        $prefix = str_repeat("\xFF", 3000);
+
+        $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
+        $object->setStream($prefix.$rawDeflate);
+
+        self::assertSame($expected, $object->getStream(false));
+    }
 }
