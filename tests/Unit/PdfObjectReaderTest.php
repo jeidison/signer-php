@@ -55,6 +55,20 @@ final class PdfObjectReaderTest extends TestCase
         $reader->objectFromBuffer($buffer, 9, 0, $offsetEnd);
     }
 
+    public function test_object_from_buffer_recovers_when_expected_object_header_appears_later_in_buffer(): void
+    {
+        $reader = new PdfObjectReader;
+        $buffer = "3 0 obj\n<< /Type /Catalog >>\nendobj\n"
+            ."9 0 obj\n<< /Type /Page >>\nendobj\n";
+
+        $offsetEnd = 0;
+        $object = $reader->objectFromBuffer($buffer, 9, 0, $offsetEnd);
+
+        self::assertSame(9, $object->getOid());
+        self::assertSame('Page', $object['Type']->val());
+        self::assertGreaterThan(0, $offsetEnd);
+    }
+
     public function test_object_from_buffer_accepts_null_expected_oid(): void
     {
         $reader = new PdfObjectReader;
