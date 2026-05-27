@@ -63,7 +63,13 @@ class PageInfo
         }
 
         if (is_int($pages)) {
-            if ($this->pdfDocument->getObject($pages) === null) {
+            $pagesObjectReachable = false;
+            try {
+                $pagesObjectReachable = ($this->pdfDocument->getObject($pages) !== null);
+            } catch (PdfCoreParsingException) {
+                // xref entry exists but the object at that offset is corrupt or misidentified
+            }
+            if (! $pagesObjectReachable) {
                 $fallbackPages = $this->findFallbackPagesRootOid($root->getOid());
                 if ($fallbackPages !== null) {
                     $pages = $fallbackPages;
@@ -97,7 +103,11 @@ class PageInfo
      */
     protected function getPageInfo(int $oid, ?array $inheritedSize = null, array $visitedOids = []): array
     {
-        $object = $this->pdfDocument->getObject($oid);
+        try {
+            $object = $this->pdfDocument->getObject($oid);
+        } catch (PdfCoreParsingException $e) {
+            throw new PdfCoreStructureException('Could not resolve page tree object '.$oid.'.', 0, $e);
+        }
         if ($object === null) {
             throw new PdfCoreStructureException('Could not resolve page tree object '.$oid.'.');
         }
@@ -153,7 +163,16 @@ class PageInfo
     private function findFallbackCatalogObject(): ?PDFObject
     {
         foreach ($this->discoverObjects() as $candidate) {
-            if ($candidate['Type']?->val() === 'Catalog') {
+            $type = $candidate['Type']?->val();
+            if ($type === 'Catalog') {
+                return $candidate;
+            }
+
+            $pagesRef = $candidate['Pages']?->asObjectReferenceOrNull();
+            $hasPagesReference = is_int($pagesRef)
+                || (is_array($pagesRef) && $pagesRef !== []);
+
+            if (($type === null || $type === '') && $hasPagesReference) {
                 return $candidate;
             }
         }
@@ -189,7 +208,13 @@ class PageInfo
         $descriptors = [];
 
         foreach ($this->discoverObjects() as $candidate) {
-            if ($candidate['Type']?->val() !== 'Page') {
+            $type = $candidate['Type']?->val();
+            $isExplicitPage = $type === 'Page';
+            $isPageLikeWithoutType = ($type === null || $type === '')
+                && isset($candidate['MediaBox'])
+                && (isset($candidate['Parent']) || isset($candidate['Contents']));
+
+            if (! $isExplicitPage && ! $isPageLikeWithoutType) {
                 continue;
             }
 
@@ -266,7 +291,7 @@ class PageInfo
             return $objects;
         }
 
-        if (preg_match_all('/(?:^|[\r\n])(\d+)\s+(\d+)\s+obj\b/m', $buffer, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) === 0) {
+        if (preg_match_all('/(?:^|[\r\n\x00])(\d+)\s+(\d+)\s+obj\b/m', $buffer, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) === 0) {
             return $objects;
         }
 

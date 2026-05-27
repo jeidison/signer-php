@@ -149,6 +149,42 @@ final class PageInfoTest extends TestCase
         self::assertNotNull($pageInfo->getPage(0));
     }
 
+    public function test_acquire_pages_info_inferrs_catalog_when_type_is_missing_but_pages_reference_exists(): void
+    {
+        $document = new PdfDocument;
+        $document->setTrailerObject(new PDFValueObject([
+            'Root' => new PDFValueReference(99),
+        ]));
+        $document->addObject(new PDFObject(1, [
+            'Pages' => new PDFValueReference(2),
+        ]));
+        $document->addObject(new PDFObject(2, [
+            'Type' => '/Pages',
+            'Kids' => [3],
+            'Count' => 1,
+            'MediaBox' => [0, 0, 10, 10],
+        ]));
+        $document->addObject(new PDFObject(3, [
+            'Type' => '/Page',
+            'Parent' => new PDFValueReference(2),
+        ]));
+
+        $pageInfo = PageInfo::new()
+            ->withPdfDocument($document)
+            ->acquirePagesInfo();
+
+        self::assertNotNull($pageInfo->getPage(0));
+        $size = $pageInfo->getPageSize(0);
+        self::assertIsArray($size);
+        self::assertSame(
+            [0, 0, 10, 10],
+            array_map(
+                static fn (mixed $value): mixed => is_object($value) && method_exists($value, 'val') ? $value->val() : $value,
+                $size
+            )
+        );
+    }
+
     public function test_acquire_pages_info_falls_back_to_catalog_discovered_from_raw_buffer_when_xref_cannot_resolve_root(): void
     {
         $document = new PdfDocument;
@@ -160,6 +196,26 @@ final class PageInfoTest extends TestCase
             "1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
             ."2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n"
             ."3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 10 10] >>\nendobj\n"
+        );
+
+        $pageInfo = PageInfo::new()
+            ->withPdfDocument($document)
+            ->acquirePagesInfo();
+
+        self::assertNotNull($pageInfo->getPage(0));
+    }
+
+    public function test_acquire_pages_info_falls_back_to_catalog_discovered_from_raw_buffer_with_null_delimiters(): void
+    {
+        $document = new PdfDocument;
+        $document->setTrailerObject(new PDFValueObject([
+            'Root' => new PDFValueReference(99),
+        ]));
+        $document->setXrefTable([]);
+        $document->setBufferFromString(
+            "\x00"."1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+            ."\x00"."2 0 obj\n<< /Type /Pages /Kids [3 0 R] /Count 1 >>\nendobj\n"
+            ."\x00"."3 0 obj\n<< /Type /Page /Parent 2 0 R /MediaBox [0 0 10 10] >>\nendobj\n"
         );
 
         $pageInfo = PageInfo::new()
@@ -301,6 +357,52 @@ final class PageInfoTest extends TestCase
         PageInfo::new()
             ->withPdfDocument($document)
             ->acquirePagesInfo();
+    }
+
+    public function test_acquire_pages_info_inferrs_pages_node_when_type_is_missing_but_kids_are_present(): void
+    {
+        $document = new PdfDocument;
+        $document->setTrailerObject(new PDFValueObject([
+            'Root' => new PDFValueReference(1),
+        ]));
+        $document->addObject(new PDFObject(1, [
+            'Type' => '/Catalog',
+            'Pages' => new PDFValueReference(2),
+        ]));
+        $document->addObject(new PDFObject(2, [
+            'Kids' => [3],
+            'Count' => 1,
+        ]));
+        $document->addObject(new PDFObject(3, [
+            'Type' => '/Page',
+            'Parent' => new PDFValueReference(2),
+            'MediaBox' => [0, 0, 10, 10],
+        ]));
+
+        $pageInfo = PageInfo::new()
+            ->withPdfDocument($document)
+            ->acquirePagesInfo();
+
+        self::assertNotNull($pageInfo->getPage(0));
+    }
+
+    public function test_acquire_pages_info_falls_back_to_loose_page_like_object_when_type_is_missing(): void
+    {
+        $document = new PdfDocument;
+        $document->setTrailerObject(new PDFValueObject([
+            'Root' => new PDFValueReference(999),
+        ]));
+        $document->addObject(new PDFObject(7, [
+            'Parent' => new PDFValueReference(2),
+            'MediaBox' => [0, 0, 20, 20],
+            'Contents' => new PDFValueReference(8),
+        ]));
+
+        $pageInfo = PageInfo::new()
+            ->withPdfDocument($document)
+            ->acquirePagesInfo();
+
+        self::assertNotNull($pageInfo->getPage(0));
     }
 
     public function test_acquire_pages_info_fails_when_pages_node_has_invalid_kids_list(): void
@@ -513,6 +615,41 @@ final class PageInfoTest extends TestCase
         $this->setPagesInfo($pageInfo, [new PageDescriptor(1, [1, 2, 3, 4])]);
 
         self::assertNull($pageInfo->getPageSize(new PDFObject(99, ['Type' => '/Page'])));
+    }
+
+    public function test_acquire_pages_info_falls_back_to_loose_pages_when_pages_oid_throws_parsing_exception(): void
+    {
+        // Simulates poppler-395-0-fuzzed.pdf: catalog's /Pages references an OID whose
+        // xref offset is corrupt (wrong object found) — getObject() throws PdfCoreParsingException.
+        $document = new class extends PdfDocument
+        {
+            public function getObject(int $oid, bool $originalVersion = false): ?PDFObject
+            {
+                if ($oid === 2) {
+                    throw new PdfCoreParsingException('PDF structure is corrupt: found obj 3 while searching for obj 2 (at 174).');
+                }
+
+                return parent::getObject($oid, $originalVersion);
+            }
+        };
+
+        $document->setTrailerObject(new PDFValueObject([
+            'Root' => new PDFValueReference(1),
+        ]));
+        $document->addObject(new PDFObject(1, [
+            'Type' => '/Catalog',
+            'Pages' => new PDFValueReference(2),
+        ]));
+        $document->addObject(new PDFObject(5, [
+            'Type' => '/Page',
+            'MediaBox' => [0, 0, 612, 792],
+        ]));
+
+        $pageInfo = PageInfo::new()
+            ->withPdfDocument($document)
+            ->acquirePagesInfo();
+
+        self::assertNotNull($pageInfo->getPage(0));
     }
 
     /** @param array<int, PageDescriptor> $descriptors */
