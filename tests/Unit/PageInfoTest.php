@@ -225,6 +225,52 @@ final class PageInfoTest extends TestCase
         self::assertNotNull($pageInfo->getPage(0));
     }
 
+    public function test_acquire_pages_info_falls_back_to_alternate_pages_root_when_catalog_pages_reference_throws_parsing_exception(): void
+    {
+        $document = new class extends PdfDocument
+        {
+            public function __construct()
+            {
+                $this->setTrailerObject(new PDFValueObject([
+                    'Root' => new PDFValueReference(1),
+                ]));
+
+                $this->addObject(new PDFObject(1, [
+                    'Type' => '/Catalog',
+                    'Pages' => new PDFValueReference(2),
+                ]));
+                $this->addObject(new PDFObject(3, [
+                    'Type' => '/Pages',
+                    'Parent' => new PDFValueReference(1),
+                    'Kids' => [4],
+                    'Count' => 1,
+                ]));
+                $this->addObject(new PDFObject(4, [
+                    'Type' => '/Page',
+                    'Parent' => new PDFValueReference(3),
+                    'MediaBox' => [0, 0, 10, 10],
+                ]));
+            }
+
+            public function getObject(int $oid, bool $originalVersion = false): ?PDFObject
+            {
+                return match ($oid) {
+                    1 => parent::getObject($oid, $originalVersion),
+                    2 => throw new PdfCoreParsingException('synthetic xref parsing failure'),
+                    3 => parent::getObject($oid, $originalVersion),
+                    4 => parent::getObject($oid, $originalVersion),
+                    default => null,
+                };
+            }
+        };
+
+        $pageInfo = PageInfo::new()
+            ->withPdfDocument($document)
+            ->acquirePagesInfo();
+
+        self::assertNotNull($pageInfo->getPage(0));
+    }
+
     public function test_acquire_pages_info_falls_back_to_loose_pages_when_root_and_catalog_are_unresolvable(): void
     {
         $document = new PdfDocument;
