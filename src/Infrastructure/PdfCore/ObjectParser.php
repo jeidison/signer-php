@@ -185,6 +185,10 @@ class ObjectParser implements Stringable
                 case self::T_STREAM_BEGIN:
                 case self::T_STREAM_END:
                     throw new PdfCoreParsingException('Invalid list definition');
+                case self::T_DICT_END:
+                    // Stray '>>' inside a list (unclosed array) — return partial list;
+                    // the caller's dict loop will consume '>>' to close the parent dict.
+                    return new PDFValueList($list);
                 default:
                     $value = $this->parseValue();
                     if ($value !== null) {

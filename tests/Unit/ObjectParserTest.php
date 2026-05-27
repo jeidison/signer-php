@@ -107,6 +107,19 @@ final class ObjectParserTest extends TestCase
         $parser->parseString('[obj]');
     }
 
+    public function test_parser_recovers_from_unclosed_array_when_dict_end_is_encountered(): void
+    {
+        // Simulates poppler-937-0-fuzzed.pdf: a list that never closes with `]`
+        // and the outer dict's `>>` is encountered inside it.
+        $parser = new ObjectParser;
+
+        $parsed = $parser->parseString('<< /Type /Pages /MediaBox [0 0 612 792 /Count 1 >>');
+
+        self::assertInstanceOf(PDFValueObject::class, $parsed);
+        self::assertSame('Pages', $parsed['Type']->val());
+        self::assertNotNull($parsed['MediaBox']);
+    }
+
     public function test_parser_throws_when_only_comment_is_present(): void
     {
         $parser = new ObjectParser;
