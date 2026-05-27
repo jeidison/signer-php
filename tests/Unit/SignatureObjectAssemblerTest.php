@@ -197,22 +197,23 @@ final class SignatureObjectAssemblerTest extends TestCase
         self::assertCount(2, $updatedPage['Annots']->val());
     }
 
-    public function test_assemble_throws_when_annotation_reference_list_object_cannot_be_resolved(): void
+    public function test_assemble_recovers_when_annotation_reference_list_object_cannot_be_resolved(): void
     {
         $document = $this->buildSinglePageDocument();
         $page = $document->getObject(3);
         self::assertNotNull($page);
         $page['Annots'] = new PDFValueReference(9997);
         $document->addObject($page);
-
-        $this->expectException(PdfCoreStructureException::class);
-        $this->expectExceptionMessage('Could not resolve annotation list object');
-
         (new SignatureObjectAssembler)->assemble(
             $document,
             SignatureAppearance::new()->withRect([10, 10, 100, 60]),
             Metadata::new()
         );
+
+        $updatedPage = $document->getObject(3);
+        self::assertNotNull($updatedPage);
+        self::assertInstanceOf(PDFValueList::class, $updatedPage['Annots']);
+        self::assertCount(1, $updatedPage['Annots']->val());
     }
 
     public function test_assemble_uses_inline_object_as_acroform_when_reference_is_not_resolvable(): void

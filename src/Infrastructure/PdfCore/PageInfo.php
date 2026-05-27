@@ -46,7 +46,14 @@ class PageInfo
         }
 
         if ($root === null) {
-            throw new PdfCoreStructureException('Could not resolve root object from trailer.');
+            $fallbackPages = $this->deriveLoosePageDescriptors();
+            if ($fallbackPages === []) {
+                throw new PdfCoreStructureException('Could not resolve root object from trailer.');
+            }
+
+            $this->pagesInfo = $fallbackPages;
+
+            return $this;
         }
 
         $pagesValue = $root['Pages'] ?? null;

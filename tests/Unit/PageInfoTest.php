@@ -169,6 +169,24 @@ final class PageInfoTest extends TestCase
         self::assertNotNull($pageInfo->getPage(0));
     }
 
+    public function test_acquire_pages_info_falls_back_to_loose_pages_when_root_and_catalog_are_unresolvable(): void
+    {
+        $document = new PdfDocument;
+        $document->setTrailerObject(new PDFValueObject([
+            'Root' => new PDFValueReference(999),
+        ]));
+        $document->addObject(new PDFObject(7, [
+            'Type' => '/Page',
+            'MediaBox' => [0, 0, 20, 20],
+        ]));
+
+        $pageInfo = PageInfo::new()
+            ->withPdfDocument($document)
+            ->acquirePagesInfo();
+
+        self::assertNotNull($pageInfo->getPage(0));
+    }
+
     public function test_acquire_pages_info_falls_back_to_pages_object_when_catalog_pages_reference_is_invalid(): void
     {
         $document = new PdfDocument;
