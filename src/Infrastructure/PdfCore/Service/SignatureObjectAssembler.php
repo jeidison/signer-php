@@ -100,8 +100,7 @@ final class SignatureObjectAssembler
         PDFValue $value,
         string $context,
         bool $fallbackWhenMissingReference = false,
-    ): PDFValueList
-    {
+    ): PDFValueList {
         if ($value instanceof PDFValueList) {
             return new PDFValueList($value->val());
         }
