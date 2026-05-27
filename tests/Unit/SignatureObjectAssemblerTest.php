@@ -134,6 +134,56 @@ final class SignatureObjectAssemblerTest extends TestCase
         );
     }
 
+    public function test_assemble_throws_when_acroform_fields_reference_cannot_be_resolved(): void
+    {
+        $document = $this->buildSinglePageDocument();
+        $acroForm = $document->createObject([
+            'Fields' => new PDFValueReference(9996),
+        ]);
+
+        $root = $document->getObject(1);
+        self::assertNotNull($root);
+        $root['AcroForm'] = new PDFValueReference($acroForm->getOid());
+        $document->addObject($root);
+
+        $this->expectException(PdfCoreStructureException::class);
+        $this->expectExceptionMessage('Could not resolve AcroForm fields object');
+
+        (new SignatureObjectAssembler)->assemble(
+            $document,
+            SignatureAppearance::new()->withRect([10, 10, 100, 60]),
+            Metadata::new()
+        );
+    }
+
+    public function test_assemble_uses_resolved_acroform_object_fields(): void
+    {
+        $document = $this->buildSinglePageDocument();
+        $acroForm = $document->createObject([
+            'Fields' => new PDFValueObject([
+                'One' => new PDFValueReference(10),
+            ]),
+        ]);
+
+        $root = $document->getObject(1);
+        self::assertNotNull($root);
+        $root['AcroForm'] = new PDFValueReference($acroForm->getOid());
+        $document->addObject($root);
+
+        (new SignatureObjectAssembler)->assemble(
+            $document,
+            SignatureAppearance::new()->withRect([10, 10, 100, 60]),
+            Metadata::new()
+        );
+
+        $updatedRoot = $document->getObject(1);
+        self::assertNotNull($updatedRoot);
+        self::assertNotNull($updatedRoot['AcroForm']);
+        $resolvedAcroForm = $document->getObject($updatedRoot['AcroForm']->asObjectReferenceOrNull());
+        self::assertNotNull($resolvedAcroForm);
+        self::assertInstanceOf(PDFValueList::class, $resolvedAcroForm['Fields']);
+    }
+
     public function test_assemble_throws_when_perms_reference_cannot_be_resolved(): void
     {
         $document = $this->buildSinglePageDocument();
@@ -197,22 +247,23 @@ final class SignatureObjectAssemblerTest extends TestCase
         self::assertCount(2, $updatedPage['Annots']->val());
     }
 
-    public function test_assemble_throws_when_annotation_reference_list_object_cannot_be_resolved(): void
+    public function test_assemble_recovers_when_annotation_reference_list_object_cannot_be_resolved(): void
     {
         $document = $this->buildSinglePageDocument();
         $page = $document->getObject(3);
         self::assertNotNull($page);
         $page['Annots'] = new PDFValueReference(9997);
         $document->addObject($page);
-
-        $this->expectException(PdfCoreStructureException::class);
-        $this->expectExceptionMessage('Could not resolve annotation list object');
-
         (new SignatureObjectAssembler)->assemble(
             $document,
             SignatureAppearance::new()->withRect([10, 10, 100, 60]),
             Metadata::new()
         );
+
+        $updatedPage = $document->getObject(3);
+        self::assertNotNull($updatedPage);
+        self::assertInstanceOf(PDFValueList::class, $updatedPage['Annots']);
+        self::assertCount(1, $updatedPage['Annots']->val());
     }
 
     public function test_assemble_uses_inline_object_as_acroform_when_reference_is_not_resolvable(): void

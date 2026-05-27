@@ -46,7 +46,14 @@ class PageInfo
         }
 
         if ($root === null) {
-            throw new PdfCoreStructureException('Could not resolve root object from trailer.');
+            $fallbackPages = $this->deriveLoosePageDescriptors();
+            if ($fallbackPages === []) {
+                throw new PdfCoreStructureException('Could not resolve root object from trailer.');
+            }
+
+            $this->pagesInfo = $fallbackPages;
+
+            return $this;
         }
 
         $pagesValue = $root['Pages'] ?? null;
@@ -70,7 +77,16 @@ class PageInfo
             throw new PdfCoreStructureException('Could not resolve pages root from document catalog.');
         }
 
-        $this->pagesInfo = $this->getPageInfo($pages, null, []);
+        try {
+            $this->pagesInfo = $this->getPageInfo($pages, null, []);
+        } catch (PdfCoreStructureException $exception) {
+            $fallbackPages = $this->deriveLoosePageDescriptors();
+            if ($fallbackPages === []) {
+                throw $exception;
+            }
+
+            $this->pagesInfo = $fallbackPages;
+        }
 
         return $this;
     }
@@ -167,6 +183,29 @@ class PageInfo
         return $fallback;
     }
 
+    /** @return array<int, PageDescriptor> */
+    private function deriveLoosePageDescriptors(): array
+    {
+        $descriptors = [];
+
+        foreach ($this->discoverObjects() as $candidate) {
+            if ($candidate['Type']?->val() !== 'Page') {
+                continue;
+            }
+
+            $mediaBox = $candidate['MediaBox']?->val();
+            $pageSize = is_array($mediaBox) ? $mediaBox : [];
+            $descriptors[] = new PageDescriptor($candidate->getOid(), $pageSize);
+        }
+
+        usort(
+            $descriptors,
+            static fn (PageDescriptor $left, PageDescriptor $right): int => $left->id <=> $right->id
+        );
+
+        return $descriptors;
+    }
+
     /** @return array<int, int> */
     private function deriveKidsFromParentReference(int $parentOid, array $visitedOids): array
     {
@@ -205,6 +244,49 @@ class PageInfo
 
             if ($candidate instanceof PDFObject) {
                 $objects[$oid] = $candidate;
+            }
+        }
+
+        return $this->discoverObjectsFromRawBuffer($objects);
+    }
+
+    /**
+     * @param  array<int, PDFObject>  $objects
+     * @return array<int, PDFObject>
+     */
+    private function discoverObjectsFromRawBuffer(array $objects): array
+    {
+        if (! $this->pdfDocument->hasBuffer()) {
+            return $objects;
+        }
+
+        $buffer = $this->pdfDocument->getBuffer()->raw();
+
+        if ($buffer === '') {
+            return $objects;
+        }
+
+        if (preg_match_all('/(?:^|[\r\n])(\d+)\s+(\d+)\s+obj\b/m', $buffer, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE) === 0) {
+            return $objects;
+        }
+
+        foreach ($matches as $match) {
+            $oid = (int) ($match[1][0] ?? 0);
+            $offset = (int) ($match[1][1] ?? 0);
+
+            if ($oid === 0 || isset($objects[$oid])) {
+                continue;
+            }
+
+            try {
+                $candidate = $this->pdfDocument->findObjectAtOffset($offset, $oid);
+            } catch (PdfCoreParsingException|PdfCoreStructureException) {
+                continue;
+            }
+
+            if ($candidate instanceof PDFObject) {
+                $objects[$oid] = $candidate;
+                $this->pdfDocument->addObject($candidate);
             }
         }
 

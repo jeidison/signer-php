@@ -32,6 +32,11 @@ final class PdfObjectReader
         }
 
         if ($foundObjId !== $expectedObjId) {
+            $fallbackOffset = $this->findExpectedObjectHeaderOffset($buffer, (int) $expectedObjId, $offset);
+            if ($fallbackOffset !== null) {
+                return $this->objectFromBuffer($buffer, $expectedObjId, $fallbackOffset, $offsetEnd);
+            }
+
             throw new PdfCoreParsingException(sprintf(
                 'PDF structure is corrupt: found obj %d while searching for obj %s (at %s).',
                 $foundObjId,
@@ -69,6 +74,35 @@ final class PdfObjectReader
         $offsetEnd = $stream->getPosition();
 
         return new PDFObject($foundObjId, $objParsed, $foundObjGeneration);
+    }
+
+    private function findExpectedObjectHeaderOffset(string $buffer, int $expectedObjId, int $offset): ?int
+    {
+        if ($expectedObjId <= 0) {
+            return null;
+        }
+
+        $scanStart = max(0, $offset + 1);
+        $scanWindowLength = min(262144, max(0, strlen($buffer) - $scanStart));
+        if ($scanWindowLength === 0) {
+            return null;
+        }
+
+        $window = substr($buffer, $scanStart, $scanWindowLength);
+        $pattern = '/(?:^|[\r\n\x00\x09\x0C\x20])'.preg_quote((string) $expectedObjId, '/').'\s+\d+\s+obj\b/';
+        if (preg_match($pattern, $window, $match, PREG_OFFSET_CAPTURE) !== 1) {
+            return null;
+        }
+
+        $relativeOffset = (int) ($match[0][1] ?? -1);
+        if ($relativeOffset < 0) {
+            return null;
+        }
+
+        $header = (string) ($match[0][0] ?? '');
+        $leadingWhitespace = strlen($header) - strlen(ltrim($header, "\r\n\x00\x09\x0C\x20"));
+
+        return $scanStart + $relativeOffset + $leadingWhitespace;
     }
 
     public function parseObjectDefinitionString(string $objectDefinition, int $expectedOid): PDFObject

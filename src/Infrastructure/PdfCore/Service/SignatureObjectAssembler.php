@@ -44,7 +44,12 @@ final class SignatureObjectAssembler
                 ->generate();
         }
 
-        $annotationList = $this->resolveListValue($pdfDocument, $pageObject['Annots'] ?? new PDFValueList, 'annotation list');
+        $annotationList = $this->resolveListValue(
+            $pdfDocument,
+            $pageObject['Annots'] ?? new PDFValueList,
+            'annotation list',
+            fallbackWhenMissingReference: true,
+        );
         $annotationList->push(new PDFValueReference($annotationObject->getOid()));
         $pageObject['Annots'] = $annotationList;
 
@@ -90,8 +95,12 @@ final class SignatureObjectAssembler
         return $pageObject;
     }
 
-    private function resolveListValue(PdfDocument $pdfDocument, PDFValue $value, string $context): PDFValueList
-    {
+    private function resolveListValue(
+        PdfDocument $pdfDocument,
+        PDFValue $value,
+        string $context,
+        bool $fallbackWhenMissingReference = false,
+    ): PDFValueList {
         if ($value instanceof PDFValueList) {
             return new PDFValueList($value->val());
         }
@@ -100,6 +109,10 @@ final class SignatureObjectAssembler
         if (($reference !== null) && (! is_array($reference))) {
             $listObject = $pdfDocument->getObject($reference);
             if ($listObject === null) {
+                if ($fallbackWhenMissingReference) {
+                    return new PDFValueList;
+                }
+
                 throw new PdfCoreStructureException('Could not resolve '.$context.' object');
             }
 

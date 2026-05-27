@@ -287,7 +287,7 @@ endstream
         // If the compressed payload starts far from the stream start, blind linear probing
         // is too expensive. Scan a bounded prefix for plausible zlib/gzip headers first.
         $streamLength = strlen($stream);
-        $maxHeaderScan = min(65536, max(0, $streamLength - 2));
+        $maxHeaderScan = min(262144, max(0, $streamLength - 2));
         $attempts = 0;
 
         for ($offset = 1; $offset <= $maxHeaderScan; $offset++) {
@@ -305,7 +305,7 @@ endstream
             }
 
             // Keep this fallback bounded to avoid excessive decompression attempts.
-            if ($attempts >= 64) {
+            if ($attempts >= 256) {
                 break;
             }
         }

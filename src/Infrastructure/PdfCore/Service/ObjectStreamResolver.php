@@ -158,7 +158,8 @@ final class ObjectStreamResolver
             throw new PdfCoreStructureException('Could not resolve valid stream length for object '.$oid.'.');
         }
 
-        $object->setStream(substr($buffer, $streamOffset, $length));
+        $streamData = substr($buffer, $streamOffset, $length);
+        $object->setStream($this->recoverStreamDataWhenLengthIsShort($buffer, $streamOffset, $streamData, $object), true);
     }
 
     /**
@@ -226,5 +227,69 @@ final class ObjectStreamResolver
         }
 
         return null;
+    }
+
+    private function recoverStreamDataWhenLengthIsShort(string $buffer, int $streamOffset, string $declaredData, PDFObject $object): string
+    {
+        if (! $this->usesFlateDecode($object)) {
+            return $declaredData;
+        }
+
+        if ($this->canDecodeStream($object, $declaredData)) {
+            return $declaredData;
+        }
+
+        $endstreamPos = strpos($buffer, 'endstream', $streamOffset + strlen($declaredData));
+        if ($endstreamPos === false) {
+            return $declaredData;
+        }
+
+        $candidateRawLength = $endstreamPos - $streamOffset;
+        if ($candidateRawLength <= strlen($declaredData) || $candidateRawLength > strlen($declaredData) + 256) {
+            return $declaredData;
+        }
+
+        $candidate = substr($buffer, $streamOffset, $candidateRawLength);
+        $candidate = rtrim($candidate, "\r\n");
+        if ($candidate === '' || strlen($candidate) <= strlen($declaredData)) {
+            return $declaredData;
+        }
+
+        return $this->canDecodeStream($object, $candidate) ? $candidate : $declaredData;
+    }
+
+    private function usesFlateDecode(PDFObject $object): bool
+    {
+        $filter = $object['Filter'] ?? null;
+        if ($filter === null) {
+            return false;
+        }
+
+        $raw = is_object($filter) && method_exists($filter, 'val') ? $filter->val(true) : $filter;
+        if (is_array($raw)) {
+            foreach ($raw as $candidate) {
+                if ((string) $candidate === '/FlateDecode' || (string) $candidate === 'FlateDecode') {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        return (string) $raw === '/FlateDecode' || (string) $raw === 'FlateDecode';
+    }
+
+    private function canDecodeStream(PDFObject $object, string $streamData): bool
+    {
+        $probe = clone $object;
+        $probe->setStream($streamData, true);
+
+        try {
+            $probe->getStream(false);
+
+            return true;
+        } catch (PdfCoreParsingException|PdfCoreStructureException) {
+            return false;
+        }
     }
 }

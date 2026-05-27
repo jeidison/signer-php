@@ -6,6 +6,7 @@ namespace SignerPHP\Infrastructure\PdfCore\Xref\Service;
 
 use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreParsingException;
 use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
+use SignerPHP\Infrastructure\PdfCore\PdfDocument;
 use SignerPHP\Infrastructure\PdfCore\PdfValue\PDFValue;
 use SignerPHP\Infrastructure\PdfCore\Trailer;
 use SignerPHP\Infrastructure\PdfCore\Xref\XrefParseResult;
@@ -230,7 +231,7 @@ final class XRef14Parser
             return $currentTable;
         }
 
-        $previous = $this->parse($buffer, (int) $prevPosition, $visitedPositions);
+        $previous = $this->parsePreviousSection($buffer, (int) $prevPosition, $visitedPositions);
 
         foreach ($previous->table as $objectId => $offset) {
             if (! isset($currentTable[$objectId])) {
@@ -239,5 +240,31 @@ final class XRef14Parser
         }
 
         return $currentTable;
+    }
+
+    private function parsePreviousSection(string $buffer, int $prevPosition, array $visitedPositions): XrefParseResult
+    {
+        if ($this->previousSectionLooksLikeXrefStream($buffer, $prevPosition)) {
+            $document = new PdfDocument;
+            $document->setBufferFromString($buffer);
+
+            return (new XRef15Parser)->parse($document, $prevPosition, $visitedPositions);
+        }
+
+        return $this->parse($buffer, $prevPosition, $visitedPositions);
+    }
+
+    private function previousSectionLooksLikeXrefStream(string $buffer, int $prevPosition): bool
+    {
+        $snippet = ltrim(substr($buffer, $prevPosition, 512));
+        if ($snippet === '') {
+            return false;
+        }
+
+        if (preg_match('/^\d+\s+\d+\s+obj\b/', $snippet) !== 1) {
+            return false;
+        }
+
+        return preg_match('/\/Type\s*\/XRef\b/', $snippet) === 1;
     }
 }

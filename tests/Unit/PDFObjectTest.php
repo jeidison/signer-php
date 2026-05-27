@@ -323,4 +323,57 @@ final class PDFObjectTest extends TestCase
 
         $object->getStream(false);
     }
+
+    /**
+     * Valid zlib payload preceded by many bytes containing fake-looking zlib
+     * headers that exhaust the scan attempt limit.
+     *
+     * tryInflateWithBoundedPrefixSkip() stops at 2048 bytes (payload beyond).
+     * tryInflateByHeaderScan() stops after 64 candidate attempts (64 fake
+     * headers precede the real one at offset 65*40 = 2600 bytes).
+     *
+     * Expected: decompressed content returned after increasing the attempt limit.
+     */
+    public function test_get_stream_decodes_flate_with_real_payload_after_64_fake_headers(): void
+    {
+        $expected = 'corpus-attempt-limit-payload';
+        $validZlib = gzcompress($expected);
+        self::assertIsString($validZlib);
+
+        // 65 fake valid zlib headers (0x78 0x9C), each padded to 40 bytes with
+        // garbage so decompression fails. Total: 65 × 40 = 2600 bytes.
+        // The header scan finds candidates at offsets 40, 80, …, 2560 → exactly
+        // 64 attempts, all failing.  The 65th fake block at 2560 exhausts the
+        // limit; the real payload at offset 2600 is never reached.
+        $fakeBlock = "\x78\x9C".str_repeat("\xFF", 38); // 40 bytes: valid-looking header + garbage
+        $garbage = str_repeat($fakeBlock, 65); // 2600 bytes, provides exactly 64 scan candidates
+
+        $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
+        $object->setStream($garbage.$validZlib);
+
+        // Must decompress even after exhausting the old 64-attempt limit
+        self::assertSame($expected, $object->getStream(false));
+    }
+
+    /**
+     * Valid gzip payload buried after 70 000 bytes of binary junk.
+     * tryInflateByHeaderScan() only scans 65536 bytes, so the gzip magic bytes
+     * are never reached and inflation fails.
+     *
+     * Reproduce: 70 000-byte garbage prefix + valid gzencode() payload.
+     * Expected: decompressed content returned after widening the scan window.
+     */
+    public function test_get_stream_decodes_flate_with_gzip_header_beyond_65536_byte_scan_window(): void
+    {
+        $expected = 'corpus-gzip-payload';
+        $validGzip = gzencode($expected);
+        self::assertIsString($validGzip);
+
+        $garbage = str_repeat("\x00\x01", 35000); // 70 000 bytes, no valid headers
+        $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
+        $object->setStream($garbage.$validGzip);
+
+        // Must find and decompress the gzip payload beyond the 65536-byte window
+        self::assertSame($expected, $object->getStream(false));
+    }
 }
