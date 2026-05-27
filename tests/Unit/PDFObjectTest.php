@@ -223,6 +223,27 @@ final class PDFObjectTest extends TestCase
         }
     }
 
+    public function test_get_stream_breaks_header_scan_after_too_many_failed_header_candidates(): void
+    {
+        $object = new PDFObject(1, ['Filter' => '/FlateDecode']);
+
+        // Feed a long sequence of plausible zlib-looking bytes that still do not form a valid
+        // compressed payload, so the bounded header scan exhausts its 2048 attempts.
+        $object->setStream(str_repeat("\x78\x9C", 2050));
+
+        $this->expectException(\Exception::class);
+        $this->expectExceptionMessage('Failed to inflate FlateDecode stream.');
+
+        set_error_handler(static function (): bool {
+            return true;
+        });
+        try {
+            $object->getStream(false);
+        } finally {
+            restore_error_handler();
+        }
+    }
+
     /**
      * @return array<string, array{callable(string):string|false}>
      */
