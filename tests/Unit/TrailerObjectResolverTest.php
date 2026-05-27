@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SignerPHP\Tests\Unit;
 
 use PHPUnit\Framework\TestCase;
+use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreParsingException;
 use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
 use SignerPHP\Infrastructure\PdfCore\PdfDocument;
 use SignerPHP\Infrastructure\PdfCore\PDFObject;
@@ -33,7 +34,7 @@ final class TrailerObjectResolverTest extends TestCase
         $document->setTrailerObject(new PDFValueObject);
 
         $this->expectException(PdfCoreStructureException::class);
-        $this->expectExceptionMessage('Could not find the root object from the trailer');
+        $this->expectExceptionMessage('Invalid root object');
 
         (new TrailerObjectResolver)->resolveRootObject($document);
     }
@@ -91,5 +92,65 @@ final class TrailerObjectResolverTest extends TestCase
         $this->expectExceptionMessage('Invalid root object');
 
         (new TrailerObjectResolver)->resolveRootObject($document);
+    }
+
+    public function test_resolve_root_object_falls_back_to_catalog_when_root_reference_is_missing(): void
+    {
+        $document = new PdfDocument;
+        $catalog = new PDFObject(7, ['Type' => '/Catalog']);
+
+        $document->setTrailerObject(new PDFValueObject);
+        $document->addObject($catalog);
+
+        $resolved = (new TrailerObjectResolver)->resolveRootObject($document);
+
+        self::assertSame($catalog, $resolved);
+    }
+
+    public function test_resolve_root_object_falls_back_to_catalog_when_root_reference_is_stale(): void
+    {
+        $document = new PdfDocument;
+        $catalog = new PDFObject(9, ['Type' => '/Catalog']);
+
+        $document->setTrailerObject(new PDFValueObject(['Root' => new PDFValueReference(2)]));
+        $document->addObject($catalog);
+
+        $resolved = (new TrailerObjectResolver)->resolveRootObject($document);
+
+        self::assertSame($catalog, $resolved);
+    }
+
+    public function test_resolve_root_object_skips_parsing_failures_while_scanning_xref_for_catalog(): void
+    {
+        $document = new class extends PdfDocument
+        {
+            public function __construct()
+            {
+                $this->setTrailerObject(new PDFValueObject(['Root' => new PDFValueReference(2)]));
+            }
+
+            public function getPdfObjects(): array
+            {
+                return [];
+            }
+
+            public function getXrefTable(): array
+            {
+                return [0 => 0, 4 => 40, 5 => 50];
+            }
+
+            public function getObject(int $oid, bool $originalVersion = false): ?PDFObject
+            {
+                return match ($oid) {
+                    4 => throw new PdfCoreParsingException('synthetic xref parsing failure'),
+                    5 => new PDFObject(5, ['Type' => '/Catalog']),
+                    default => null,
+                };
+            }
+        };
+
+        $resolved = (new TrailerObjectResolver)->resolveRootObject($document);
+
+        self::assertSame(5, $resolved->getOid());
     }
 }

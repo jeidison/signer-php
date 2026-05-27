@@ -15,6 +15,13 @@ final class PdfObjectReader
     {
         $bufferLength = strlen($buffer);
         if ($offset < 0 || $offset >= $bufferLength) {
+            if (($expectedObjId !== null) && ((int) $expectedObjId > 0)) {
+                $fallbackOffset = $this->findExpectedObjectHeaderOffset($buffer, (int) $expectedObjId, -1);
+                if ($fallbackOffset !== null) {
+                    return $this->objectFromBuffer($buffer, $expectedObjId, $fallbackOffset, $offsetEnd);
+                }
+            }
+
             throw new PdfCoreParsingException('Invalid object definition: '.$expectedObjId);
         }
 
@@ -58,6 +65,10 @@ final class PdfObjectReader
             if ($tok === ObjectParser::T_STREAM_BEGIN || $tok === ObjectParser::T_OBJECT_END) {
                 break;
             }
+            if ($tok === ObjectParser::T_OBJECT_BEGIN) {
+                // Next object's header started without an `endobj` — treat as implicit endobj.
+                break;
+            }
             if ($tok === ObjectParser::T_COMMENT
                 || $tok === ObjectParser::T_LIST_START
                 || $tok === ObjectParser::T_LIST_END
@@ -82,27 +93,44 @@ final class PdfObjectReader
             return null;
         }
 
-        $scanStart = max(0, $offset + 1);
-        $scanWindowLength = min(262144, max(0, strlen($buffer) - $scanStart));
+        $bufferLength = strlen($buffer);
+        $windowStart = max(0, $offset - 1048576);
+        $windowEnd = min($bufferLength, max($offset + 1048576, 0));
+        if ($windowEnd <= $windowStart) {
+            $windowStart = 0;
+            $windowEnd = $bufferLength;
+        }
+
+        $scanStart = $windowStart;
+        $scanWindowLength = $windowEnd - $windowStart;
         if ($scanWindowLength === 0) {
             return null;
         }
 
         $window = substr($buffer, $scanStart, $scanWindowLength);
         $pattern = '/(?:^|[\r\n\x00\x09\x0C\x20])'.preg_quote((string) $expectedObjId, '/').'\s+\d+\s+obj\b/';
-        if (preg_match($pattern, $window, $match, PREG_OFFSET_CAPTURE) !== 1) {
+        if (preg_match_all($pattern, $window, $matches, PREG_OFFSET_CAPTURE) !== 1) {
             return null;
         }
 
-        $relativeOffset = (int) ($match[0][1] ?? -1);
-        if ($relativeOffset < 0) {
-            return null;
+        $bestOffset = null;
+        $bestDistance = PHP_INT_MAX;
+
+        foreach (($matches[0] ?? []) as $match) {
+            $relativeOffset = (int) ($match[1] ?? -1);
+
+            $header = (string) ($match[0] ?? '');
+            $leadingWhitespace = strlen($header) - strlen(ltrim($header, "\r\n\x00\x09\x0C\x20"));
+            $candidate = $scanStart + $relativeOffset + $leadingWhitespace;
+            $distance = abs($candidate - $offset);
+
+            if ($distance < $bestDistance) {
+                $bestDistance = $distance;
+                $bestOffset = $candidate;
+            }
         }
 
-        $header = (string) ($match[0][0] ?? '');
-        $leadingWhitespace = strlen($header) - strlen(ltrim($header, "\r\n\x00\x09\x0C\x20"));
-
-        return $scanStart + $relativeOffset + $leadingWhitespace;
+        return $bestOffset;
     }
 
     public function parseObjectDefinitionString(string $objectDefinition, int $expectedOid): PDFObject

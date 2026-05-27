@@ -271,7 +271,7 @@ endstream
         // Additional hardening: attempt to recover when arbitrary non-whitespace bytes
         // precede a valid compressed payload (seen in malformed corpus fixtures).
         // Keep a bounded search window to avoid pathological CPU cost on huge streams.
-        $maxSkip = min(2048, max(0, strlen($stream) - 2));
+        $maxSkip = min(65536, max(0, strlen($stream) - 2));
         for ($skip = 1; $skip <= $maxSkip; $skip++) {
             $inflated = self::attemptInflateCandidate(substr($stream, $skip));
             if (is_string($inflated)) {
@@ -287,7 +287,7 @@ endstream
         // If the compressed payload starts far from the stream start, blind linear probing
         // is too expensive. Scan a bounded prefix for plausible zlib/gzip headers first.
         $streamLength = strlen($stream);
-        $maxHeaderScan = min(262144, max(0, $streamLength - 2));
+        $maxHeaderScan = min(1048576, max(0, $streamLength - 2));
         $attempts = 0;
 
         for ($offset = 1; $offset <= $maxHeaderScan; $offset++) {
@@ -305,7 +305,7 @@ endstream
             }
 
             // Keep this fallback bounded to avoid excessive decompression attempts.
-            if ($attempts >= 256) {
+            if ($attempts >= 2048) {
                 break;
             }
         }

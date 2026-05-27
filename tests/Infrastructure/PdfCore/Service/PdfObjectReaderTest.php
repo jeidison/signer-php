@@ -35,15 +35,15 @@ final class PdfObjectReaderTest extends TestCase
         self::assertGreaterThan(0, $offsetEnd);
     }
 
-    public function test_object_from_buffer_throws_parsing_exception_when_offset_is_beyond_buffer(): void
+    public function test_object_from_buffer_throws_parsing_exception_when_offset_is_beyond_buffer_and_object_is_not_recoverable(): void
     {
         $reader = new PdfObjectReader;
         $buffer = "1 0 obj\n<< /Type /Catalog >>\nendobj\n";
 
         $this->expectException(\SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreParsingException::class);
-        $this->expectExceptionMessage('Invalid object definition: 1');
+        $this->expectExceptionMessage('Invalid object definition: 9');
 
         $offsetEnd = 0;
-        $reader->objectFromBuffer($buffer, 1, strlen($buffer) + 10, $offsetEnd);
+        $reader->objectFromBuffer($buffer, 9, strlen($buffer) + 10, $offsetEnd);
     }
 }

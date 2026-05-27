@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace SignerPHP\Infrastructure\PdfCore\Service;
 
+use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreParsingException;
 use SignerPHP\Infrastructure\PdfCore\Exception\PdfCoreStructureException;
 use SignerPHP\Infrastructure\PdfCore\PdfDocument;
 use SignerPHP\Infrastructure\PdfCore\PDFObject;
@@ -12,13 +13,54 @@ final class TrailerObjectResolver
 {
     public function resolveRootObject(PdfDocument $document): PDFObject
     {
-        $rootObjectId = $this->resolveRequiredReference($document, 'Root', 'root object');
-        $rootObject = $document->getObject($rootObjectId);
+        $rootObject = null;
+
+        try {
+            $rootObjectId = $this->resolveRequiredReference($document, 'Root', 'root object');
+            $rootObject = $document->getObject($rootObjectId);
+        } catch (PdfCoreStructureException) {
+            $rootObject = null;
+        }
+
+        if ($rootObject === null) {
+            $rootObject = $this->findFallbackCatalogObject($document);
+        }
+
         if ($rootObject === null) {
             throw new PdfCoreStructureException('Invalid root object');
         }
 
         return $rootObject;
+    }
+
+    private function findFallbackCatalogObject(PdfDocument $document): ?PDFObject
+    {
+        $objects = $document->getPdfObjects();
+
+        foreach ($objects as $candidate) {
+            if ($candidate instanceof PDFObject && $candidate['Type']?->val() === 'Catalog') {
+                return $candidate;
+            }
+        }
+
+        foreach ($document->getXrefTable() as $oid => $entry) {
+            $oid = (int) $oid;
+            if ($oid === 0 || isset($objects[$oid])) {
+                continue;
+            }
+
+            try {
+                $candidate = $document->getObject($oid);
+            } catch (PdfCoreParsingException|PdfCoreStructureException) {
+                continue;
+            }
+
+            if ($candidate instanceof PDFObject && $candidate['Type']?->val() === 'Catalog') {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     /**
